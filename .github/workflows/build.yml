@@ -23,6 +23,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn' # This is the key for enabling Yarn caching with setup-node
 
+      - name: Yarn version
+        run: yarn set version latest
+
       - name: Install dependencies
         run: yarn install
 

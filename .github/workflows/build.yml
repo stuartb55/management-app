@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Yarn version
-        run: yarn set version latest
+        run: corepack enable
 
       - name: Checkout repository
         uses: actions/checkout@v4

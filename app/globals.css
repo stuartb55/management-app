@@ -1,26 +1,397 @@
+/* src/app/globals.css */
+
+/* IMPORTANT: These lines are for Tailwind CSS v4. */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * The @config directive tells Tailwind where to find your tailwind.config.ts file.
+ * Adjust the path below if your globals.css and tailwind.config.ts files are in different locations.
+ * From `src/app/globals.css` to `tailwind.config.ts` (at root) requires going up one directory.
+ */
+@config "../tailwind.config.ts"; /* Corrected path */
+
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 84% 4.9%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 94.1%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+    }
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+::-webkit-scrollbar-track {
+    @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-md;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+}
+
+/* Form styles */
+.form-grid {
+    @apply grid gap-4 py-4;
+}
+
+.form-field {
+    @apply grid grid-cols-4 items-center gap-4;
+}
+
+.form-label {
+    @apply text-right text-sm font-medium;
+}
+
+.form-input {
+    @apply col-span-3;
+}
+
+/* Card hover effects */
+.card-hover {
+    @apply transition-all duration-200 hover:shadow-md;
+}
+
+/* Badge variants */
+.badge-priority-high {
+    @apply bg-red-100 text-red-800 border-red-200;
+}
+
+.badge-priority-medium {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+}
+
+.badge-priority-low {
+    @apply bg-green-100 text-green-800 border-green-200;
+}
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Loading spinner */
+.spinner {
+    @apply inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin;
+}
+
+/* Focus styles */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+}
+
+/* Table styles */
+.table-container {
+    @apply overflow-x-auto;
+}
+
+.table {
+    @apply w-full border-collapse;
+}
+
+.table th {
+    @apply px-4 py-2 text-left font-medium text-muted-foreground border-b;
+}
+
+.table td {
+    @apply px-4 py-2 border-b;
+}
+
+/* Status indicators */
+.status-dot {
+    @apply inline-block w-2 h-2 rounded-full mr-2;
+}
+
+.status-active {
+    @apply bg-green-500;
+}
+
+.status-inactive {
+    @apply bg-gray-400;
+}
+
+.status-pending {
+    @apply bg-yellow-500;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+    .mobile-stack {
+        @apply flex-col space-y-2 space-x-0;
+    }
+
+    .mobile-full {
+        @apply w-full;
+    }
+
+    .mobile-hide {
+        @apply hidden;
+    }
+}
+
+/* Print styles */
+@media print {
+    .print-hide {
+        @apply hidden;
+    }
+
+    .print-break {
+        page-break-after: always;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .card {
+        @apply border-2;
+    }
+
+    .button {
+        @apply border-2;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Custom component styles */
+.task-card {
+    @apply bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow;
+}
+
+.staff-card {
+    @apply bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow;
+}
+
+.note-card {
+    @apply bg-card border border-border rounded-lg p-4 shadow-sm;
+}
+
+.priority-indicator {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.tag-badge {
+    @apply inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary text-secondary-foreground;
+}
+
+/* Dialog and modal styles */
+.dialog-overlay {
+    @apply fixed inset-0 bg-black/50 z-50;
+}
+
+.dialog-content {
+    @apply fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 bg-background p-6 shadow-lg border border-border rounded-lg;
+}
+
+/* Form validation styles */
+.form-error {
+    @apply text-destructive text-sm mt-1;
+}
+
+.form-success {
+    @apply text-green-600 text-sm mt-1;
+}
+
+.input-error {
+    @apply border-destructive focus:ring-destructive;
+}
+
+.input-success {
+    @apply border-green-500 focus:ring-green-500;
+}
+
+/* Loading states */
+.skeleton {
+    @apply animate-pulse bg-muted rounded;
+}
+
+.skeleton-text {
+    @apply h-4 bg-muted rounded;
+}
+
+.skeleton-avatar {
+    @apply h-10 w-10 bg-muted rounded-full;
+}
+
+/* Utility classes for spacing */
+.space-y-1 > * + * {
+    margin-top: 0.25rem;
+}
+
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Custom scrollable areas */
+.scrollable {
+    @apply overflow-y-auto;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted));
+}
+
+/* Accessibility improvements */
+.sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+}
+
+.focus-visible {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+}
+
+/* Custom grid layouts */
+.grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.grid-auto-fill {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+/* Status and state indicators */
+.indicator {
+    @apply relative;
+}
+
+.indicator::after {
+    @apply absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full content-[''];
+}
+
+.indicator.success::after {
+    @apply bg-green-500;
+}
+
+.indicator.warning::after {
+    @apply bg-yellow-500;
+}
+
+.indicator.info::after {
+    @apply bg-blue-500;
+}
+
+/* Drag and drop styles */
+.draggable {
+    @apply cursor-move;
+}
+
+.drag-over {
+    @apply bg-primary/10 border-primary border-dashed;
+}
+
+.drop-zone {
+    @apply border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center text-muted-foreground;
+}
+
+.drop-zone.active {
+    @apply border-primary bg-primary/5 text-primary;
 }

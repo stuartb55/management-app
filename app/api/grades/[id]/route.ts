@@ -10,8 +10,10 @@ interface RouteContext {
     params: { id: string };
 }
 
-export async function GET(request: NextRequest, {params}: RouteContext) {
-    try {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
         const {id} = params;
         const grade = await getGradeById(id);
         if (!grade) {

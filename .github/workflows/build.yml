@@ -14,6 +14,9 @@ jobs:
         node-version: [ '22.x' ]
 
     steps:
+      - name: Yarn version
+        run: yarn set version latest
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -23,8 +26,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn' # This is the key for enabling Yarn caching with setup-node
 
-      - name: Yarn version
-        run: yarn set version latest
+
 
       - name: Install dependencies
         run: yarn install

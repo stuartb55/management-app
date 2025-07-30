@@ -1,322 +1,365 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { useState, useEffect } from "react"
-import { getStaff, addStaff, updateStaff, deleteStaff, getGrades, getTeams } from "@/lib/api-client"
-import type { Staff, Grade, Team } from "@/lib/types"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
-import { PlusCircle, Edit, Trash2, User, Mail, Phone, Briefcase, Users, ChevronRight } from "lucide-react"
-import Link from "next/link"
+import React, {useState, useEffect} from "react";
+import {Staff, Grade, Team} from "@/lib/types";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    addStaff,
+    deleteStaff,
+    getGrades,
+    getStaff,
+    getTeams,
+    updateStaff,
+} from "@/lib/api-client";
+import {toast} from "sonner"; // Using sonner for toasts
+import LoadingSpinner from "./loading-spinner";
+import Link from "next/link";
+import {getStaffName} from "@/lib/utils";
 
 export function StaffManagement() {
-  const [staff, setStaff] = useState<Staff[]>([])
-  const [grades, setGrades] = useState<Grade[]>([])
-  const [teams, setTeams] = useState<Team[]>([])
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [currentStaff, setCurrentStaff] = useState<Partial<Staff> | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+    const [staff, setStaff] = useState<Staff[]>([]);
+    const [grades, setGrades] = useState<Grade[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [allStaff, setAllStaff] = useState<Staff[]>([]); // For line manager dropdown
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+    const [newStaffData, setNewStaffData] = useState<
+        Omit<Staff, "id" | "createdAt" | "updatedAt" | "gradeName" | "teamName">
+    >({
+        firstName: "",
+        lastName: "",
+        email: "",
+        gradeId: "",
+        teamId: "",
+        lineManagerId: null,
+    });
+    const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
-    setIsLoading(true)
-    const [staffData, gradesData, teamsData] = await Promise.all([getStaff(), getGrades(), getTeams()])
-    setStaff(staffData)
-    setGrades(gradesData)
-    setTeams(teamsData)
-    setIsLoading(false)
-  }
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [staffData, gradesData, teamsData, allStaffData] = await Promise.all([
+                    getStaff(),
+                    getGrades(),
+                    getTeams(),
+                    getStaff(), // Fetch all staff for line manager selection
+                ]);
+                setStaff(staffData);
+                setGrades(gradesData);
+                setTeams(teamsData);
+                setAllStaff(allStaffData);
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                toast.error("Failed to load staff data. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
-  const handleAddStaff = () => {
-    setCurrentStaff({
-      name: "",
-      email: "",
-      staffNumber: "",
-      jobRole: "",
-      jobId: "",
-      gradeId: "",
-      teamId: "",
-      lineManagerId: "",
-    })
-    setIsDialogOpen(true)
-  }
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const {id, value} = e.target;
+        if (editingStaff) {
+            setEditingStaff((prev) => ({...prev!, [id]: value}));
+        } else {
+            setNewStaffData((prev) => ({...prev, [id]: value}));
+        }
+    };
 
-  const handleEditStaff = (staffMember: Staff) => {
-    setCurrentStaff({ ...staffMember })
-    setIsDialogOpen(true)
-  }
+    const handleSelectChange = (id: string, value: string) => {
+        if (editingStaff) {
+            setEditingStaff((prev) => ({...prev!, [id]: value}));
+        } else {
+            setNewStaffData((prev) => ({...prev, [id]: value}));
+        }
+    };
 
-  const handleDeleteStaff = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this staff member?")) {
-      const success = await deleteStaff(id)
-      if (success) {
-        toast.success("Staff member deleted successfully!")
-        fetchData()
-      } else {
-        toast.error("Failed to delete staff member.")
-      }
+    const handleAddStaff = async () => {
+        if (
+            !newStaffData.firstName ||
+            !newStaffData.lastName ||
+            !newStaffData.email ||
+            !newStaffData.gradeId ||
+            !newStaffData.teamId
+        ) {
+            toast.error("Please fill in all required fields.");
+            return;
+        }
+        setLoading(true);
+        try {
+            const addedStaff = await addStaff(newStaffData);
+            setStaff((prev) => [...prev, addedStaff]);
+            setNewStaffData({
+                firstName: "",
+                lastName: "",
+                email: "",
+                gradeId: "",
+                teamId: "",
+                lineManagerId: null,
+            });
+            setIsDialogOpen(false);
+            toast.success("Staff member added successfully!");
+        } catch (error) {
+            console.error("Failed to add staff:", error);
+            toast.error("Failed to add staff. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateStaff = async () => {
+        if (
+            !editingStaff?.firstName ||
+            !editingStaff?.lastName ||
+            !editingStaff?.email ||
+            !editingStaff?.gradeId ||
+            !editingStaff?.teamId
+        ) {
+            toast.error("Please fill in all required fields.");
+            return;
+        }
+        if (!editingStaff) return;
+
+        setLoading(true);
+        try {
+            // Omit gradeName and teamName as they are derived from gradeId and teamId
+            const {gradeName, teamName, ...dataToUpdate} = editingStaff;
+            const updated = await updateStaff(editingStaff.id, dataToUpdate);
+            setStaff((prev) =>
+                prev.map((s) => (s.id === updated.id ? {...s, ...updated} : s)),
+            ); // Update with new derived properties
+            setEditingStaff(null);
+            setIsDialogOpen(false);
+            toast.success("Staff member updated successfully!");
+        } catch (error) {
+            console.error("Failed to update staff:", error);
+            toast.error("Failed to update staff. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteStaff = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this staff member?")) return;
+        setLoading(true);
+        try {
+            await deleteStaff(id);
+            setStaff((prev) => prev.filter((s) => s.id !== id));
+            toast.success("Staff member deleted successfully!");
+        } catch (error) {
+            console.error("Failed to delete staff:", error);
+            toast.error("Failed to delete staff. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const openAddDialog = () => {
+        setEditingStaff(null);
+        setNewStaffData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            gradeId: "",
+            teamId: "",
+            lineManagerId: null,
+        });
+        setIsDialogOpen(true);
+    };
+
+    const openEditDialog = (staffMember: Staff) => {
+        setEditingStaff(staffMember);
+        setIsDialogOpen(true);
+    };
+
+    if (loading) {
+        return <LoadingSpinner/>;
     }
-  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!currentStaff) return
-
-    let result: Staff | null
-    if (currentStaff.id) {
-      // Update existing staff
-      result = await updateStaff(currentStaff.id, currentStaff)
-      if (result) {
-        toast.success("Staff member updated successfully!")
-      } else {
-        toast.error("Failed to update staff member.")
-      }
-    } else {
-      // Add new staff
-      result = await addStaff(
-        currentStaff as Omit<Staff, "id" | "createdAt" | "updatedAt" | "gradeName" | "teamName" | "lineManagerName">,
-      )
-      if (result) {
-        toast.success("Staff member added successfully!")
-      } else {
-        toast.error("Failed to add staff member.")
-      }
-    }
-
-    if (result) {
-      setIsDialogOpen(false)
-      fetchData()
-    }
-  }
-
-  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p>Loading staff data...</p>
-      </div>
-    )
-  }
+        <div className="space-y-4">
+            <Button onClick={openAddDialog}>Add New Staff</Button>
 
-  return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-2xl font-bold">Staff Directory</CardTitle>
-        <Button onClick={handleAddStaff} size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Staff
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {staff.map((staffMember) => (
-            <Card key={staffMember.id} className="relative group hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="flex items-center space-x-3">
-                  <User className="h-6 w-6 text-primary" />
-                  <CardTitle className="text-lg">{staffMember.name}</CardTitle>
-                </div>
-                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" onClick={() => handleEditStaff(staffMember)}>
-                    <Edit className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(staffMember.id)}>
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                <p className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  {staffMember.email}
-                </p>
-                <p className="flex items-center gap-2 mt-1">
-                  <Phone className="h-4 w-4" />
-                  Staff #: {staffMember.staffNumber}
-                </p>
-                {staffMember.jobRole && (
-                  <p className="flex items-center gap-2 mt-1">
-                    <Briefcase className="h-4 w-4" />
-                    {staffMember.jobRole}
-                  </p>
-                )}
-                {staffMember.teamName && (
-                  <p className="flex items-center gap-2 mt-1">
-                    <Users className="h-4 w-4" />
-                    Team: {staffMember.teamName}
-                  </p>
-                )}
-                {staffMember.gradeName && (
-                  <p className="flex items-center gap-2 mt-1">Grade: {staffMember.gradeName}</p>
-                )}
-                {staffMember.lineManagerName && (
-                  <p className="flex items-center gap-2 mt-1">Manager: {staffMember.lineManagerName}</p>
-                )}
-                <Link
-                  href={`/staff/${staffMember.id}`}
-                  className="absolute bottom-3 right-3 text-primary hover:underline flex items-center"
-                >
-                  View Profile <ChevronRight className="h-4 w-4 ml-1" />
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+            {staff.length === 0 && (
+                <p className="text-muted-foreground">No staff members found. Add a new one!</p>
+            )}
+
+            {staff.length > 0 && (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Grade</TableHead>
+                            <TableHead>Team</TableHead>
+                            <TableHead>Line Manager</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {staff.map((s) => (
+                            <TableRow key={s.id}>
+                                <TableCell>
+                                    <Link href={`/staff/${s.id}`} className="hover:underline">
+                                        {getStaffName(s)}
+                                    </Link>
+                                </TableCell>
+                                <TableCell>{s.email}</TableCell>
+                                <TableCell>{s.gradeName}</TableCell>
+                                <TableCell>{s.teamName}</TableCell>
+                                <TableCell>
+                                    {s.lineManagerId
+                                        ? getStaffName(
+                                            allStaff.find((manager) => manager.id === s.lineManagerId),
+                                        )
+                                        : "N/A"}
+                                </TableCell>
+                                <TableCell className="space-x-2 text-right">
+                                    <Button variant="outline" size="sm" onClick={() => openEditDialog(s)}>
+                                        Edit
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteStaff(s.id)}>
+                                        Delete
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {editingStaff
+                                ? "Make changes to the staff member here."
+                                : "Add a new staff member to the system."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="form-grid py-4">
+                        <Input
+                            id="firstName"
+                            placeholder="First Name"
+                            value={editingStaff ? editingStaff.firstName : newStaffData.firstName}
+                            onChange={handleInputChange}
+                            required
+                        />
+                        <Input
+                            id="lastName"
+                            placeholder="Last Name"
+                            value={editingStaff ? editingStaff.lastName : newStaffData.lastName}
+                            onChange={handleInputChange}
+                            required
+                        />
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="Email"
+                            value={editingStaff ? editingStaff.email : newStaffData.email}
+                            onChange={handleInputChange}
+                            required
+                        />
+                        <Select
+                            value={editingStaff ? editingStaff.gradeId : newStaffData.gradeId}
+                            onValueChange={(value) => handleSelectChange("gradeId", value)}
+                            required
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Grade"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {grades.map((grade) => (
+                                    <SelectItem key={grade.id} value={grade.id}>
+                                        {grade.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            value={editingStaff ? editingStaff.teamId : newStaffData.teamId}
+                            onValueChange={(value) => handleSelectChange("teamId", value)}
+                            required
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Team"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {teams.map((team) => (
+                                    <SelectItem key={team.id} value={team.id}>
+                                        {team.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            value={
+                                editingStaff?.lineManagerId ||
+                                newStaffData.lineManagerId ||
+                                ""
+                            }
+                            onValueChange={(value) =>
+                                handleSelectChange("lineManagerId", value === "" ? null : value)
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Line Manager (Optional)"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {allStaff
+                                    .filter((s) => s.id !== (editingStaff?.id || "temp")) // Cannot be their own manager
+                                    .map((manager) => (
+                                        <SelectItem key={manager.id} value={manager.id}>
+                                            {getStaffName(manager)}
+                                        </SelectItem>
+                                    ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={editingStaff ? handleUpdateStaff : handleAddStaff}
+                            disabled={loading}
+                        >
+                            {loading ? "Saving..." : editingStaff ? "Save Changes" : "Add Staff"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
-      </CardContent>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{currentStaff?.id ? "Edit Staff Member" : "Add Staff Member"}</DialogTitle>
-            <CardDescription>
-              {currentStaff?.id
-                ? "Make changes to staff member details here."
-                : "Add a new staff member to your directory."}
-            </CardDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={currentStaff?.name || ""}
-                onChange={(e) => setCurrentStaff((prev) => ({ ...prev, name: e.target.value }))}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={currentStaff?.email || ""}
-                onChange={(e) => setCurrentStaff((prev) => ({ ...prev, email: e.target.value }))}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="staffNumber" className="text-right">
-                Staff #
-              </Label>
-              <Input
-                id="staffNumber"
-                value={currentStaff?.staffNumber || ""}
-                onChange={(e) => setCurrentStaff((prev) => ({ ...prev, staffNumber: e.target.value }))}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="jobRole" className="text-right">
-                Job Role
-              </Label>
-              <Input
-                id="jobRole"
-                value={currentStaff?.jobRole || ""}
-                onChange={(e) => setCurrentStaff((prev) => ({ ...prev, jobRole: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="jobId" className="text-right">
-                Job ID
-              </Label>
-              <Input
-                id="jobId"
-                value={currentStaff?.jobId || ""}
-                onChange={(e) => setCurrentStaff((prev) => ({ ...prev, jobId: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="grade" className="text-right">
-                Grade
-              </Label>
-              <Select
-                value={currentStaff?.gradeId || ""}
-                onValueChange={(value) =>
-                  setCurrentStaff((prev) => ({ ...prev, gradeId: value === "none" ? null : value }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {grades.map((grade) => (
-                    <SelectItem key={grade.id} value={grade.id}>
-                      {grade.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="team" className="text-right">
-                Team
-              </Label>
-              <Select
-                value={currentStaff?.teamId || ""}
-                onValueChange={(value) =>
-                  setCurrentStaff((prev) => ({ ...prev, teamId: value === "none" ? null : value }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="lineManager" className="text-right">
-                Line Manager
-              </Label>
-              <Select
-                value={currentStaff?.lineManagerId || ""}
-                onValueChange={(value) =>
-                  setCurrentStaff((prev) => ({ ...prev, lineManagerId: value === "none" ? null : value }))
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a line manager" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem> {/* Option for no line manager */}
-                  {staff.map((manager) => (
-                    <SelectItem key={manager.id} value={manager.id}>
-                      {manager.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button type="submit">{currentStaff?.id ? "Save changes" : "Add Staff"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  )
+    );
 }

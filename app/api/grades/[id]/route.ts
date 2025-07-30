@@ -1,40 +1,68 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { updateGrade, deleteGrade } from "@/lib/database"
-import type { Grade } from "@/lib/types"
+// app/api/grades/[id]/route.ts
+import {NextRequest, NextResponse} from "next/server";
+import {
+    deleteGrade as dbDeleteGrade,
+    getGradeById,
+    updateGrade as dbUpdateGrade,
+} from "@/lib/database";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    console.log(`Updating grade with ID: ${params.id}`)
-    const updates: Partial<Grade> = await request.json()
-
-    const updatedGrade = await updateGrade(params.id, updates)
-    if (updatedGrade) {
-      console.log(`Successfully updated grade: ${updatedGrade.name}`)
-      return NextResponse.json(updatedGrade)
-    } else {
-      console.log(`Grade not found for update: ${params.id}`)
-      return NextResponse.json({ error: "Grade not found" }, { status: 404 })
-    }
-  } catch (error) {
-    console.error(`Error in PUT /api/grades/${params.id}:`, error)
-    return NextResponse.json({ error: "Failed to update grade" }, { status: 500 })
-  }
+interface RouteContext {
+    params: { id: string };
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    console.log(`Deleting grade with ID: ${params.id}`)
-    const success = await deleteGrade(params.id)
-
-    if (success) {
-      console.log(`Successfully deleted grade: ${params.id}`)
-      return NextResponse.json({ success: true })
-    } else {
-      console.log(`Grade not found for deletion: ${params.id}`)
-      return NextResponse.json({ error: "Grade not found" }, { status: 404 })
+export async function GET(request: NextRequest, {params}: RouteContext) {
+    try {
+        const {id} = params;
+        const grade = await getGradeById(id);
+        if (!grade) {
+            return NextResponse.json({message: "Grade not found"}, {status: 404});
+        }
+        return NextResponse.json(grade, {status: 200});
+    } catch (error) {
+        console.error("Error fetching grade:", error);
+        return NextResponse.json(
+            {message: "Internal Server Error"},
+            {status: 500},
+        );
     }
-  } catch (error) {
-    console.error(`Error in DELETE /api/grades/${params.id}:`, error)
-    return NextResponse.json({ error: "Failed to delete grade" }, { status: 500 })
-  }
+}
+
+export async function PUT(request: NextRequest, {params}: RouteContext) {
+    try {
+        const {id} = params;
+        const {name} = await request.json();
+
+        if (!name) {
+            return NextResponse.json({message: "Name is required"}, {status: 400});
+        }
+
+        const updatedGrade = await dbUpdateGrade(id, {name});
+        if (!updatedGrade) {
+            return NextResponse.json({message: "Grade not found"}, {status: 404});
+        }
+        return NextResponse.json(updatedGrade, {status: 200});
+    } catch (error) {
+        console.error("Error updating grade:", error);
+        return NextResponse.json(
+            {message: "Internal Server Error"},
+            {status: 500},
+        );
+    }
+}
+
+export async function DELETE(request: NextRequest, {params}: RouteContext) {
+    try {
+        const {id} = params;
+        const deleted = await dbDeleteGrade(id);
+        if (!deleted) {
+            return NextResponse.json({message: "Grade not found"}, {status: 404});
+        }
+        return NextResponse.json({message: "Grade deleted"}, {status: 200});
+    } catch (error) {
+        console.error("Error deleting grade:", error);
+        return NextResponse.json(
+            {message: "Internal Server Error"},
+            {status: 500},
+        );
+    }
 }

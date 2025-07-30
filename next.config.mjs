@@ -1,30 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false, // Set to false for production
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Set to false for production
   },
   images: {
-    unoptimized: true,
+    // Set to `false` for production to enable Next.js Image Optimization
+    // If you're hosting images on a CDN, you might need to configure `remotePatterns` here.
+    unoptimized: false,
   },
   webpack: (config, { isServer }) => {
+    // Exclude 'pg-native' from the client-side bundle
     if (!isServer) {
-      // Exclude pg from client-side bundle
       config.resolve.fallback = {
         ...config.resolve.fallback,
         pg: false,
         'pg-native': false,
-        dns: false,
-        net: false,
-        tls: false,
-        fs: false,
-        'pg-hstore': false,
-      }
+        lokijs: false,
+        'pino-pretty': false,
+      };
     }
-    return config
-  },
-}
 
-export default nextConfig
+    return config;
+  },
+};
+
+export default nextConfig;

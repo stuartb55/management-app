@@ -1,34 +1,61 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { GradeManagement } from "@/components/admin/grade-management"
-import { TeamManagement } from "@/components/admin/team-management"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {GradeManagement} from "@/components/admin/grade-management";
+import {TeamManagement} from "@/components/admin/team-management";
+import {getGrades, getTeams} from "@/lib/api-client";
+import {Grade, Team} from "@/lib/types";
+import {Suspense} from "react";
+import LoadingSpinner from "@/components/loading-spinner";
 
-export default function AdminPage() {
-  return (
-    <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Administration</h1>
-        <p className="text-muted-foreground mt-2">Manage organizational structure and settings</p>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Grade Management</CardTitle>
-            <CardDescription>Manage job grades within the organization.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <GradeManagement />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Management</CardTitle>
-            <CardDescription>Manage teams within the organization.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TeamManagement />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
+export default async function AdminPage() {
+    let initialGrades: Grade[] = [];
+    let initialTeams: Team[] = [];
+    let error: string | null = null;
+
+    try {
+        [initialGrades, initialTeams] = await Promise.all([getGrades(), getTeams()]);
+    } catch (err) {
+        console.error("Failed to fetch initial admin data:", err);
+        error = "Failed to load admin data. Please try again.";
+    }
+
+    if (error) {
+        return (
+            <div className="container mx-auto p-4 md:p-6">
+                <h1 className="mb-6 text-3xl font-bold">Admin Dashboard</h1>
+                <div className="flex items-center justify-center p-8 text-red-500">
+                    {error}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto p-4 md:p-6">
+            <h1 className="mb-6 text-3xl font-bold">Admin Dashboard</h1>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Grade Management</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Suspense fallback={<LoadingSpinner/>}>
+                            <GradeManagement initialGrades={initialGrades}/>
+                        </Suspense>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Team Management</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Suspense fallback={<LoadingSpinner/>}>
+                            <TeamManagement initialTeams={initialTeams}/>
+                        </Suspense>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }

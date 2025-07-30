@@ -1,14 +1,20 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getTasksByStaffId } from "@/lib/database"
+import {NextRequest, NextResponse} from "next/server";
+import {getTasks} from "@/lib/database"; // Change to getTasks
 
-export async function GET(request: NextRequest, { params }: { params: { staffId: string } }) {
-  try {
-    console.log(`Fetching tasks for staff ID: ${params.staffId}`)
-    const tasks = await getTasksByStaffId(params.staffId)
-    console.log(`Successfully fetched ${tasks.length} tasks for staff member`)
-    return NextResponse.json(tasks)
-  } catch (error) {
-    console.error(`Error in GET /api/tasks/staff/${params.staffId}:`, error)
-    return NextResponse.json({ error: "Failed to fetch tasks for staff member" }, { status: 500 })
-  }
+interface RouteContext {
+    params: { staffId: string };
+}
+
+export async function GET(request: NextRequest, {params}: RouteContext) {
+    try {
+        const {staffId} = params;
+        const tasks = await getTasks(staffId); // Call getTasks with staffId
+        return NextResponse.json(tasks, {status: 200});
+    } catch (error) {
+        console.error("Error fetching tasks by staff ID:", error);
+        return NextResponse.json(
+            {message: "Internal Server Error"},
+            {status: 500},
+        );
+    }
 }

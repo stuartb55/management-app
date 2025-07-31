@@ -1,9 +1,25 @@
--- Drop existing tables if they exist (in correct order due to foreign key constraints)
+-- Drop existing types and tables if they exist (in correct order)
 DROP TABLE IF EXISTS notes CASCADE;
 DROP TABLE IF EXISTS tasks CASCADE;
 DROP TABLE IF EXISTS staff CASCADE;
 DROP TABLE IF EXISTS teams CASCADE;
 DROP TABLE IF EXISTS grades CASCADE;
+DROP TYPE IF EXISTS task_status;
+DROP TYPE IF EXISTS task_priority;
+
+-- Create ENUM types for controlled vocabularies
+CREATE TYPE task_status AS ENUM ('Pending', 'In Progress', 'Completed', 'Blocked', 'Cancelled');
+CREATE TYPE task_priority AS ENUM ('Low', 'Medium', 'High', 'Urgent');
+
+-- Create a function to automatically update the 'updated_at' timestamp
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Create grades table
 CREATE TABLE grades
@@ -14,6 +30,11 @@ CREATE TABLE grades
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER set_timestamp
+    BEFORE UPDATE
+    ON grades
+    FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
 -- Create teams table
 CREATE TABLE teams
@@ -24,8 +45,13 @@ CREATE TABLE teams
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER set_timestamp
+    BEFORE UPDATE
+    ON teams
+    FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
--- Create staff table with foreign key relationships
+-- Create staff table
 CREATE TABLE staff
 (
     id              UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
@@ -40,15 +66,20 @@ CREATE TABLE staff
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER set_timestamp
+    BEFORE UPDATE
+    ON staff
+    FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
 -- Create tasks table
 CREATE TABLE tasks
 (
     id                UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    title             VARCHAR(255) NOT NULL,
+    title             VARCHAR(255)  NOT NULL,
     description       TEXT,
-    status            VARCHAR(50)  NOT NULL    DEFAULT 'Pending',
-    priority          VARCHAR(50)  NOT NULL    DEFAULT 'Medium',
+    status            task_status   NOT NULL   DEFAULT 'Pending',
+    priority          task_priority NOT NULL   DEFAULT 'Medium',
     due_date          TIMESTAMP WITH TIME ZONE,
     completed         BOOLEAN                  DEFAULT FALSE,
     completed_at      TIMESTAMP WITH TIME ZONE,
@@ -59,8 +90,13 @@ CREATE TABLE tasks
     created_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER set_timestamp
+    BEFORE UPDATE
+    ON tasks
+    FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
--- Create notes table
+-- Create notes table (linked to STAFF as per your types.ts)
 CREATE TABLE notes
 (
     id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
@@ -70,14 +106,17 @@ CREATE TABLE notes
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER set_timestamp
+    BEFORE UPDATE
+    ON notes
+    FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
--- Create indexes for better performance
+-- Create indexes
 CREATE INDEX idx_staff_email ON staff (email);
 CREATE INDEX idx_staff_staff_number ON staff (staff_number);
-CREATE INDEX idx_tasks_staff_id ON tasks (staff_id);
-CREATE INDEX idx_tasks_due_date ON tasks (due_date);
-CREATE INDEX idx_tasks_status ON tasks (status);
-CREATE INDEX idx_notes_staff_id ON notes (staff_id);
 CREATE INDEX idx_staff_grade_id ON staff (grade_id);
 CREATE INDEX idx_staff_team_id ON staff (team_id);
-CREATE INDEX idx_staff_line_manager_id ON staff (line_manager_id);
+CREATE INDEX idx_tasks_staff_id ON tasks (staff_id);
+CREATE INDEX idx_tasks_due_date ON tasks (due_date);
+CREATE INDEX idx_notes_staff_id ON notes (staff_id);

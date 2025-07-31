@@ -1,7 +1,6 @@
 "use client";
 
 import React, {useState} from "react";
-import {Team} from "@/lib/types";
 import {
     Table,
     TableBody,
@@ -21,21 +20,15 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import {addTeam, deleteTeam, updateTeam} from "@/lib/api-client";
-import {toast} from "sonner"; // Using sonner for toasts
+import {toast} from "sonner";
 import LoadingSpinner from "../loading-spinner";
 
-interface TeamManagementProps {
-    initialTeams: Team[];
-}
-
-export function TeamManagement({initialTeams}: TeamManagementProps) {
-    const [teams, setTeams] = useState<Team[]>(initialTeams);
+export function TeamManagement({initialTeams}) {
+    const [teams, setTeams] = useState(initialTeams);
     const [newTeamName, setNewTeamName] = useState("");
-    const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+    const [editingTeam, setEditingTeam] = useState(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    // No need for useEffect to fetch teams initially, as they are passed as props
 
     const handleAddTeam = async () => {
         if (!newTeamName.trim()) {
@@ -81,7 +74,7 @@ export function TeamManagement({initialTeams}: TeamManagementProps) {
         }
     };
 
-    const handleDeleteTeam = async (id: string) => {
+    const handleDeleteTeam = async (id) => {
         if (!window.confirm("Are you sure you want to delete this team?")) return;
         setLoading(true);
         try {
@@ -102,7 +95,7 @@ export function TeamManagement({initialTeams}: TeamManagementProps) {
         setIsDialogOpen(true);
     };
 
-    const openEditDialog = (team: Team) => {
+    const openEditDialog = (team) => {
         setEditingTeam(team);
         setNewTeamName(team.name);
         setIsDialogOpen(true);

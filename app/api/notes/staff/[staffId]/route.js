@@ -1,14 +1,10 @@
-import {NextRequest, NextResponse} from "next/server";
+import {NextResponse} from "next/server";
 import {getNotes} from "@/lib/database";
 
-interface RouteContext {
-    params: { staffId: string };
-}
-
-export async function GET(request: NextRequest, {params}: RouteContext) {
+export async function GET(request, {params}) {
     try {
         const {staffId} = params;
-        const notes = await getNotes(staffId); // Call getNotes with staffId
+        const notes = await getNotes(staffId);
         return NextResponse.json(notes, {status: 200});
     } catch (error) {
         console.error("Error fetching notes by staff ID:", error);

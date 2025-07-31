@@ -1,35 +1,30 @@
-// app/api/grades/[id]/route.ts
-import {NextRequest, NextResponse} from "next/server";
+import {NextResponse} from "next/server";
 import {
     deleteGrade as dbDeleteGrade,
     getGradeById,
     updateGrade as dbUpdateGrade,
 } from "@/lib/database";
 
-interface RouteContext {
-    params: { id: string };
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request, {params}) {
+    try {
         const {id} = params;
         const grade = await getGradeById(id);
+
         if (!grade) {
             return NextResponse.json({message: "Grade not found"}, {status: 404});
         }
+
         return NextResponse.json(grade, {status: 200});
     } catch (error) {
         console.error("Error fetching grade:", error);
         return NextResponse.json(
             {message: "Internal Server Error"},
-            {status: 500},
+            {status: 500}
         );
     }
 }
 
-export async function PUT(request: NextRequest, {params}: RouteContext) {
+export async function PUT(request, {params}) {
     try {
         const {id} = params;
         const {name} = await request.json();
@@ -52,7 +47,7 @@ export async function PUT(request: NextRequest, {params}: RouteContext) {
     }
 }
 
-export async function DELETE(request: NextRequest, {params}: RouteContext) {
+export async function DELETE(request, {params}) {
     try {
         const {id} = params;
         const deleted = await dbDeleteGrade(id);

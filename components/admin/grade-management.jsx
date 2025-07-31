@@ -1,7 +1,6 @@
 "use client";
 
 import React, {useState} from "react";
-import {Grade} from "@/lib/types";
 import {
     Table,
     TableBody,
@@ -21,21 +20,15 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import {addGrade, deleteGrade, updateGrade} from "@/lib/api-client";
-import {toast} from "sonner"; // Using sonner for toasts
+import {toast} from "sonner";
 import LoadingSpinner from "../loading-spinner";
 
-interface GradeManagementProps {
-    initialGrades: Grade[];
-}
-
-export function GradeManagement({initialGrades}: GradeManagementProps) {
-    const [grades, setGrades] = useState<Grade[]>(initialGrades);
+export function GradeManagement({initialGrades}) {
+    const [grades, setGrades] = useState(initialGrades);
     const [newGradeName, setNewGradeName] = useState("");
-    const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
+    const [editingGrade, setEditingGrade] = useState(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    // No need for useEffect to fetch grades initially, as they are passed as props
 
     const handleAddGrade = async () => {
         if (!newGradeName.trim()) {
@@ -81,7 +74,7 @@ export function GradeManagement({initialGrades}: GradeManagementProps) {
         }
     };
 
-    const handleDeleteGrade = async (id: string) => {
+    const handleDeleteGrade = async (id) => {
         if (!window.confirm("Are you sure you want to delete this grade?")) return;
         setLoading(true);
         try {
@@ -102,7 +95,7 @@ export function GradeManagement({initialGrades}: GradeManagementProps) {
         setIsDialogOpen(true);
     };
 
-    const openEditDialog = (grade: Grade) => {
+    const openEditDialog = (grade) => {
         setEditingGrade(grade);
         setNewGradeName(grade.name);
         setIsDialogOpen(true);

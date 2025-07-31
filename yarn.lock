@@ -2606,9 +2606,9 @@ __metadata:
   linkType: hard
 
 "@types/d3-dispatch@npm:*":
-  version: 3.0.6
-  resolution: "@types/d3-dispatch@npm:3.0.6"
-  checksum: 10c0/405eb7d0ec139fbf72fa6a43b0f3ca8a1f913bb2cb38f607827e63fca8d4393f021f32f3b96b33c93ddbd37789453a0b3624f14f504add5308fd9aec8a46dda0
+  version: 3.0.7
+  resolution: "@types/d3-dispatch@npm:3.0.7"
+  checksum: 10c0/38c6605ebf0bf0099dfb70eafe0dd4ae8213368b40b8f930b72a909ff2e7259d2bd8a54d100bb5a44eb4b36f4f2a62dcb37f8be59613ca6b507c7a2f910b3145
   languageName: node
   linkType: hard
 
@@ -3589,8 +3589,8 @@ __metadata:
   linkType: hard
 
 "babel-preset-current-node-syntax@npm:^1.1.0":
-  version: 1.1.1
-  resolution: "babel-preset-current-node-syntax@npm:1.1.1"
+  version: 1.2.0
+  resolution: "babel-preset-current-node-syntax@npm:1.2.0"
   dependencies:
     "@babel/plugin-syntax-async-generators": "npm:^7.8.4"
     "@babel/plugin-syntax-bigint": "npm:^7.8.3"
@@ -3609,7 +3609,7 @@ __metadata:
     "@babel/plugin-syntax-top-level-await": "npm:^7.14.5"
   peerDependencies:
     "@babel/core": ^7.0.0 || ^8.0.0-0
-  checksum: 10c0/e774fbd1504fecbd209da23a6aaa575fa39b50edb21197284321f319c2e81831d6c114f6d3734ec22c5dfb66e54d6404b370590bf44b975003b6b6e650184064
+  checksum: 10c0/94a4f81cddf9b051045d08489e4fff7336292016301664c138cfa3d9ffe3fe2ba10a24ad6ae589fd95af1ac72ba0216e1653555c187e694d7b17be0c002bea10
   languageName: node
   linkType: hard
 
@@ -3772,17 +3772,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.30001579":
+"caniuse-lite@npm:^1.0.30001579, caniuse-lite@npm:^1.0.30001702, caniuse-lite@npm:^1.0.30001726":
   version: 1.0.30001727
   resolution: "caniuse-lite@npm:1.0.30001727"
   checksum: 10c0/f0a441c05d8925d728c2d02ce23b001935f52183a3bf669556f302568fe258d1657940c7ac0b998f92bc41383e185b390279a7d779e6d96a2b47881f56400221
-  languageName: node
-  linkType: hard
-
-"caniuse-lite@npm:^1.0.30001702, caniuse-lite@npm:^1.0.30001726":
-  version: 1.0.30001731
-  resolution: "caniuse-lite@npm:1.0.30001731"
-  checksum: 10c0/d8cddf817d5bec8e7c2106affdbf1bfc3923463ca16697c992b2efeb043e6a5d9dcb70cda913bc6acf9112fd66f9e80279316c08e7800359116925066a63fdfa
   languageName: node
   linkType: hard
 
@@ -4467,9 +4460,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.173":
-  version: 1.5.192
-  resolution: "electron-to-chromium@npm:1.5.192"
-  checksum: 10c0/7993350fdd3c12d9667a42370ce3202bf3012fd6fed13ac1393eeb3fdda51347e805f340ae06939192f37b00a3d0856034b69b1bf6696ba96848fd42267a6f8b
+  version: 1.5.193
+  resolution: "electron-to-chromium@npm:1.5.193"
+  checksum: 10c0/b26173709a8235b87acb4bdfdc2502f345ce306b92b944e32c4f8b355b5252662be67b5693f9294263b72edff69ccfd47902607219b0d4490e8dfd84fbdefeae
   languageName: node
   linkType: hard
 
@@ -6848,12 +6841,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:^0.534.0":
-  version: 0.534.0
-  resolution: "lucide-react@npm:0.534.0"
+"lucide-react@npm:^0.535.0":
+  version: 0.535.0
+  resolution: "lucide-react@npm:0.535.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/83abbdf3e0661bffe2472577dbbea51afd83660870dbc02ed8a4d28269301c72f3ef8743373ddfcd6fcb736842d33d0851df45a55957b6ba1bae5cd84c77cac4
+  checksum: 10c0/688439e202b36866ee40479b9f1093a144cc249690c2710b463cdd6c5b00006b439d763840d8d1f4cfe91d51e036c30024ccff5290cd7842dd20ebe5c9e4a8b2
   languageName: node
   linkType: hard
 
@@ -6945,7 +6938,7 @@ __metadata:
     eslint-config-next: "npm:15.4.5"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     jest: "npm:^30.0.5"
-    lucide-react: "npm:^0.534.0"
+    lucide-react: "npm:^0.535.0"
     next: "npm:15.4.5"
     next-themes: "npm:^0.4.6"
     pg: "npm:^8.16.3"

@@ -1,65 +1,36 @@
-import {getStaffById, getStaff, getTasks, getNotes} from "@/lib/database"
-import {StaffDetails} from "@/components/staff-details" // Corrected import
-import {TaskManagement} from "@/components/task-management"
-import {NotesManagement} from "@/components/notes-management"
-import {notFound} from "next/navigation"
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import React from "react";
+// Import from both database and api-client as needed
+import {getStaffById, getStaff} from "@/lib/database";
+import {getNotes, getTasks} from "@/lib/api-client";
+import {StaffDetailsView} from "@/components/staff-details-view";
 
-export default async function StaffProfilePage({params}) {
-    const {id} = params
+// This remains an async Server Component
+export default async function StaffDetailsPage({params}) {
+    const {id} = params;
 
-    // We still need allStaff to pass down to the task and note management components
-    const [staffMember, allStaff, tasks, notes] = await Promise.all([
+    // Fetch all necessary data on the server in parallel
+    const [staffMember, allStaff, allNotes, allTasks] = await Promise.all([
         getStaffById(id),
         getStaff(),
-        getTasks(id),
-        getNotes(id),
-    ])
+        getNotes(), // Fetches all notes
+        getTasks(), // Fetches all tasks
+    ]);
 
     if (!staffMember) {
-        notFound()
+        return <div className="container mx-auto p-6">Staff member not found.</div>;
     }
 
+    // Filter the notes and tasks for the specific staff member
+    const notesForStaff = allNotes.filter(note => note.staffId === id);
+    const tasksForStaff = allTasks.filter(task => task.staffId === id);
+
+    // Pass the correctly filtered data down to the client component
     return (
-        <div className="container mx-auto p-6 space-y-8">
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator/>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink href="/staff">Staff</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator/>
-                    <BreadcrumbItem>
-                        <BreadcrumbPage>{staffMember.name}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                </BreadcrumbList>
-            </Breadcrumb>
-
-            {/* This now correctly shows details, not a form */}
-            <StaffDetails staffMember={staffMember}/>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <TaskManagement
-                    tasks={tasks}
-                    staffId={id}
-                    allStaff={allStaff} // allStaff is still needed here for the "Add Task" form
-                />
-                <NotesManagement
-                    notes={notes}
-                    staffId={id}
-                    allStaff={allStaff} // allStaff is still needed here for the "Add Note" form
-                />
-            </div>
-        </div>
-    )
+        <StaffDetailsView
+            staffMember={staffMember}
+            allStaff={allStaff}
+            notes={notesForStaff}
+            tasks={tasksForStaff}
+        />
+    );
 }

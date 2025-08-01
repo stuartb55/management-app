@@ -1,206 +1,113 @@
 "use client"
 
-import {useState, useEffect} from "react"
-import {addTask} from "@/lib/api-client"
+import React, {useState} from "react"
 import {Button} from "@/components/ui/button"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {Textarea} from "@/components/ui/textarea"
-import {TaskCard} from "./task-card"
+import {Checkbox} from "@/components/ui/checkbox"
+import {CardFooter} from "@/components/ui/card"
+import {addTask, deleteTask, updateTask} from "@/lib/api-client"
 import {toast} from "sonner"
-import {PlusCircle} from "lucide-react"
+import {Trash2} from "lucide-react"
+import {useRouter} from "next/navigation"
 
-// Define the initial state for a new task outside the component
-const getInitialNewTaskState = (staffId) => ({
-    staffId: staffId || null,
-    title: "",
-    description: "",
-    status: "To Do",
-    priority: "Medium",
-    completed: false,
-    dueDate: null,
-    completedAt: null,
-    recurringPattern: null,
-    nextDueDate: null,
-    originalTaskId: null,
-});
+export function TaskManagement({staffId, initialTasks}) {
+    const router = useRouter()
+    const [tasks] = useState(initialTasks || [])
+    const [newTask, setNewTask] = useState("")
+    const [loading, setLoading] = useState(false)
 
-
-export function TaskManagement({
-                                   tasks: initialTasks = [],
-                                   allStaff = [],
-                                   staffId,
-                               }) {
-    const [tasks, setTasks] = useState(initialTasks)
-    // Use a lazy initialiser for the state to ensure it's only set once
-    const [newTask, setNewTask] = useState(() => getInitialNewTaskState(staffId));
-
-
-    useEffect(() => {
-        setTasks(initialTasks)
-    }, [initialTasks])
-
-    const handleInputChange = (e) => {
-        const {name, value} = e.target
-        setNewTask(prev => ({...prev, [name]: value}))
-    }
-
-    const handleSelectChange = (name, value) => {
-        // This is the key fix: only update the state if the value has actually changed.
-        const newValue = value || null;
-        setNewTask(prev => {
-            if (prev[name] === newValue) {
-                return prev; // Return the same state object if the value is unchanged
-            }
-            return {...prev, [name]: newValue}
-        })
-    }
+    // The problematic useEffect has been removed.
 
     const handleAddTask = async () => {
-        if (!newTask.title || !newTask.staffId) {
-            toast.error("Title and assigned staff member are required.")
+        if (!newTask.trim()) {
+            toast.error("Task description cannot be empty.")
             return
         }
+        setLoading(true)
         try {
-            const addedTask = await addTask(newTask)
-            if (addedTask) {
-                setTasks(prev => [addedTask, ...prev])
-                // Reset the form correctly
-                setNewTask(getInitialNewTaskState(staffId));
-                toast.success("Task added successfully!")
-            } else {
-                toast.error("Failed to add task.")
-            }
+            await addTask({staffId, description: newTask, completed: false})
+            toast.success("Task added successfully!")
+            setNewTask("")
+            router.refresh()
         } catch (error) {
-            toast.error(
-                `Failed to add task: ${
-                    error instanceof Error ? error.message : String(error)
-                }`
-            )
+            toast.error("Failed to add task.")
+        } finally {
+            setLoading(false)
         }
     }
 
-    const handleTaskUpdated = (updatedTask) => {
-        setTasks(prev =>
-            prev.map(task => (task.id === updatedTask.id ? updatedTask : task))
-        )
+    const handleToggleTask = async (task) => {
+        setLoading(true)
+        try {
+            await updateTask(task.id, {...task, completed: !task.completed})
+            toast.success("Task updated!")
+            router.refresh()
+        } catch (error) {
+            toast.error("Failed to update task.")
+        } finally {
+            setLoading(false)
+        }
     }
 
-    const handleTaskDeleted = (taskId) => {
-        setTasks(prev => prev.filter(task => task.id !== taskId))
+    const handleDeleteTask = async (taskId) => {
+        if (!confirm("Are you sure you want to delete this task?")) return
+        setLoading(true)
+        try {
+            await deleteTask(taskId)
+            toast.success("Task deleted successfully!")
+            router.refresh()
+        } catch (error) {
+            toast.error("Failed to delete task.")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Add New Task</CardTitle>
-                    <CardDescription>Assign a new task to a staff member.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="task-title">Title</Label>
-                        <Input
-                            id="task-title"
-                            name="title"
-                            value={newTask.title}
-                            onChange={handleInputChange}
-                            placeholder="E.g., Complete project report"
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="task-staff">Assign To</Label>
-                            <Select
-                                name="staffId"
-                                value={newTask.staffId || ""}
-                                onValueChange={value => handleSelectChange("staffId", value)}
-                                disabled={!!staffId}
+        <div className="space-y-4">
+            <div className="space-y-2">
+                {tasks.length > 0 ? (
+                    tasks.map((task) => (
+                        <div key={task.id} className="flex items-center justify-between p-3 rounded-md border">
+                            <div className="flex items-center gap-3">
+                                <Checkbox
+                                    id={`task-${task.id}`}
+                                    checked={task.completed}
+                                    onCheckedChange={() => handleToggleTask(task)}
+                                    disabled={loading}
+                                />
+                                <label
+                                    htmlFor={`task-${task.id}`}
+                                    className={`text-sm ${task.completed ? "line-through text-muted-foreground" : ""}`}
+                                >
+                                    {task.description}
+                                </label>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteTask(task.id)}
+                                disabled={loading}
                             >
-                                <SelectTrigger id="task-staff">
-                                    <SelectValue placeholder="Select staff"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(allStaff || []).map(s => (
-                                        <SelectItem key={s.id} value={s.id}>
-                                            {s.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                <Trash2 className="h-4 w-4"/>
+                            </Button>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="task-priority">Priority</Label>
-                            <Select
-                                name="priority"
-                                value={newTask.priority}
-                                onValueChange={(value) => handleSelectChange("priority", value)}
-                            >
-                                <SelectTrigger id="task-priority">
-                                    <SelectValue placeholder="Select priority"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Urgent">Urgent</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="task-description">Description</Label>
-                        <Textarea
-                            id="task-description"
-                            name="description"
-                            value={newTask.description || ""}
-                            onChange={handleInputChange}
-                            placeholder="Add more details about the task..."
-                            rows={3}
-                        />
-                    </div>
-                    <Button onClick={handleAddTask} className="w-full md:w-auto self-end">
-                        <PlusCircle className="mr-2 h-4 w-4"/> Add Task
-                    </Button>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Existing Tasks</CardTitle>
-                    <CardDescription>
-                        {staffId ? "Tasks assigned to this staff member." : "All tasks."}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                    {tasks.length === 0 ? (
-                        <p className="text-center text-muted-foreground">No tasks found.</p>
-                    ) : (
-                        tasks.map(task => (
-                            <TaskCard
-                                key={task.id}
-                                task={task}
-                                allStaff={allStaff}
-                                onTaskUpdated={handleTaskUpdated}
-                                onTaskDeleted={handleTaskDeleted}
-                            />
-                        ))
-                    )}
-                </CardContent>
-            </Card>
+                    ))
+                ) : (
+                    <p className="text-sm text-muted-foreground">No tasks found.</p>
+                )}
+            </div>
+            <CardFooter className="flex gap-2 p-0">
+                <Input
+                    placeholder="Add a new task..."
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    disabled={loading}
+                />
+                <Button onClick={handleAddTask} disabled={loading}>
+                    {loading ? "Adding..." : "Add Task"}
+                </Button>
+            </CardFooter>
         </div>
     )
 }

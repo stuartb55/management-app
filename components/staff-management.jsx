@@ -1,6 +1,7 @@
 "use client";
 
 import React, {useState, useEffect} from "react";
+import {useRouter} from "next/navigation"; // Import the router
 import {
     Table,
     TableBody,
@@ -38,52 +39,81 @@ import {toast} from "sonner";
 import LoadingSpinner from "./loading-spinner";
 import Link from "next/link";
 
-// A special value for the "None" option in the Select component
 const NONE_VALUE = "none";
 
-export function StaffManagement() {
-    const [staff, setStaff] = useState([]);
+export function StaffManagement({staffMember, allStaff: initialAllStaff}) {
+    const router = useRouter(); // Initialise the router
+    const [staff, setStaff] = useState(initialAllStaff || []);
     const [grades, setGrades] = useState([]);
     const [teams, setTeams] = useState([]);
-    const [allStaff, setAllStaff] = useState([]); // For line manager dropdown
+    const [allStaff, setAllStaff] = useState(initialAllStaff || []);
 
     const initialNewStaffState = {
-        name: "", // Use a single `name` field
+        name: "",
         email: "",
-        staffNumber: "", // Added required fields from schema
-        jobRole: "",     // Added required fields from schema
+        staffNumber: "",
+        jobRole: "",
         gradeId: "",
         teamId: "",
         lineManagerId: null,
     };
 
     const [newStaffData, setNewStaffData] = useState(initialNewStaffState);
-    const [editingStaff, setEditingStaff] = useState(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [editingStaff, setEditingStaff] = useState(staffMember || null);
+    const [isDialogOpen, setIsDialogOpen] = useState(!!staffMember);
+    const [loading, setLoading] = useState(!initialAllStaff);
+
+    // This function handles closing the dialog and redirecting if necessary
+    const handleCloseDialog = () => {
+        // If the component was loaded for a specific staff member, it's the edit page.
+        // On close, redirect back to that staff member's details page.
+        if (staffMember) {
+            router.push(`/staff/${staffMember.id}`);
+        } else {
+            // Otherwise, it's a dialog on the main list page, so just close it.
+            setIsDialogOpen(false);
+            setEditingStaff(null);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+        const fetchGradesAndTeams = async () => {
             try {
-                const [staffData, gradesData, teamsData] = await Promise.all([
-                    getStaff(),
+                const [gradesData, teamsData] = await Promise.all([
                     getGrades(),
                     getTeams(),
                 ]);
-                setStaff(staffData);
                 setGrades(gradesData);
                 setTeams(teamsData);
-                setAllStaff(staffData); // Use the same fetched staff data
             } catch (error) {
-                console.error("Failed to fetch data:", error);
+                console.error("Failed to fetch grades and teams:", error);
+                toast.error("Failed to load grade and team data. Please try again.");
+            }
+        };
+
+        fetchGradesAndTeams();
+    }, []);
+
+    useEffect(() => {
+        const fetchStaff = async () => {
+            setLoading(true);
+            try {
+                const staffData = await getStaff();
+                setStaff(staffData);
+                setAllStaff(staffData);
+            } catch (error) {
+                console.error("Failed to fetch staff data:", error);
                 toast.error("Failed to load staff data. Please try again.");
             } finally {
                 setLoading(false);
             }
         };
-        fetchData();
-    }, []);
+
+        if (!initialAllStaff) {
+            fetchStaff();
+        }
+    }, [initialAllStaff]);
+
 
     const handleInputChange = (e) => {
         const {id, value} = e.target;
@@ -109,26 +139,21 @@ export function StaffManagement() {
         setLoading(true);
         try {
             if (editingStaff) {
-                // The updateStaff function from your API probably doesn't need all these fields
-                const {id, ...dataToUpdate} = currentData;
-                await updateStaff(id, dataToUpdate);
+                await updateStaff(editingStaff.id, currentData);
                 toast.success("Staff member updated successfully!");
             } else {
                 await addStaff(currentData);
                 toast.success("Staff member added successfully!");
             }
-            // Refetch all staff to ensure data consistency
             const freshStaffData = await getStaff();
             setStaff(freshStaffData);
             setAllStaff(freshStaffData);
 
-            setIsDialogOpen(false);
-            setEditingStaff(null);
+            handleCloseDialog(); // Close dialog and redirect if needed
 
         } catch (error) {
             console.error("Failed to save staff:", error);
             toast.error(`Failed to save staff. ${error.message || ''}`);
-        } finally {
             setLoading(false);
         }
     };
@@ -156,12 +181,12 @@ export function StaffManagement() {
         setIsDialogOpen(true);
     };
 
-    const openEditDialog = (staffMember) => {
-        setEditingStaff(staffMember);
+    const openEditDialog = (staffMemberToEdit) => {
+        setEditingStaff(staffMemberToEdit);
         setIsDialogOpen(true);
     };
 
-    if (loading && staff.length === 0) {
+    if (loading && !isDialogOpen) {
         return <LoadingSpinner/>;
     }
 
@@ -169,13 +194,13 @@ export function StaffManagement() {
 
     return (
         <div className="space-y-4">
-            <Button onClick={openAddDialog}>Add New Staff</Button>
+            {!staffMember && <Button onClick={openAddDialog}>Add New Staff</Button>}
 
             {staff.length === 0 && !loading && (
                 <p className="text-muted-foreground">No staff members found. Add a new one!</p>
             )}
 
-            {staff.length > 0 && (
+            {staff.length > 0 && !staffMember && (
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -210,7 +235,7 @@ export function StaffManagement() {
                 </Table>
             )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{editingStaff ? "Edit Staff Member" : "Add New Staff Member"}</DialogTitle>
@@ -254,7 +279,7 @@ export function StaffManagement() {
                             <SelectContent>
                                 <SelectItem value={NONE_VALUE}>None</SelectItem>
                                 {allStaff
-                                    .filter((s) => s.id !== (editingStaff?.id || null)) // Cannot be their own manager
+                                    .filter((s) => s.id !== (editingStaff?.id || null))
                                     .map((manager) => (
                                         <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
                                     ))}
@@ -262,7 +287,7 @@ export function StaffManagement() {
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSubmit} disabled={loading}>
                             {loading ? "Saving..." : "Save"}
                         </Button>

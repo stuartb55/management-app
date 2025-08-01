@@ -7,14 +7,14 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
-import Link from "next/link"
 import {Pencil} from "lucide-react"
 
 interface StaffDetailsProps {
     staffMember: Staff
+    onEditClick: () => void; // Add onEditClick to the props interface
 }
 
-export function StaffDetails({staffMember}: StaffDetailsProps) {
+export function StaffDetails({staffMember, onEditClick}: StaffDetailsProps) {
     const details = [
         {label: "Email", value: staffMember.email},
         {label: "Job Role", value: staffMember.jobRole},
@@ -31,11 +31,10 @@ export function StaffDetails({staffMember}: StaffDetailsProps) {
                         Staff ID: {staffMember.staffNumber}
                     </CardDescription>
                 </div>
-                <Button asChild>
-                    <Link href={`/staff/${staffMember.id}/edit`}>
-                        <Pencil className="mr-2 h-4 w-4"/>
-                        Edit Details
-                    </Link>
+                {/* Change the button to use the onClick handler */}
+                <Button onClick={onEditClick}>
+                    <Pencil className="mr-2 h-4 w-4"/>
+                    Edit Details
                 </Button>
             </CardHeader>
             <CardContent>

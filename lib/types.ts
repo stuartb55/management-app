@@ -47,24 +47,23 @@ export interface Staff {
     lineManagerName?: string;
 }
 
-export interface Task {
+export type Task = {
     id: string;
     title: string;
-    description?: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    dueDate?: string; // Changed to string
+    description: string | null;
+    status: string;
+    priority: string;
     completed: boolean;
-    completedAt?: string; // Changed to string
-    recurringPattern?: RecurringPattern;
-    nextDueDate?: string; // Changed to string
-    originalTaskId?: string;
-    staffId?: string;
-    createdAt: string; // Changed to string
-    updatedAt: string; // Changed to string
-    // Optional fields from JOINs
+    staffId: string | null;
+    dueDate: string | null;
+    completedAt: string | null;
+    recurringPattern: string | null;
+    nextDueDate: string | null;
+    originalTaskId: string | null;
+    createdAt: string;
+    updatedAt: string;
     staffName?: string;
-}
+};
 
 export interface Note {
     id: string;

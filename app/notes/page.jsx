@@ -1,5 +1,5 @@
-import {getStaff} from "@/lib/database";
-import {StaffList} from "@/components/staff-list";
+import {getNotes, getStaff} from "@/lib/database";
+import {NotesManagement} from "@/components/notes-management";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -9,9 +9,11 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-
-export default async function StaffPage() {
-    const staff = await getStaff();
+export default async function NotesPage() {
+    const [notes, staff] = await Promise.all([
+        getNotes(),
+        getStaff()
+    ]);
 
     return (
         <div className="container mx-auto p-6">
@@ -22,12 +24,12 @@ export default async function StaffPage() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator/>
                     <BreadcrumbItem>
-                        <BreadcrumbPage>Staff</BreadcrumbPage>
+                        <BreadcrumbPage>Notes</BreadcrumbPage>
                     </BreadcrumbItem>
                 </BreadcrumbList>
             </Breadcrumb>
-            <h1 className="text-3xl font-bold mb-6">Staff Management</h1>
-            <StaffList staff={staff}/>
+            {/* Pass the correct props */}
+            <NotesManagement notes={notes} allStaff={staff}/>
         </div>
     );
 }

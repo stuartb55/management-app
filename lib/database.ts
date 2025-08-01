@@ -156,29 +156,57 @@ export async function getStaffById(id: string): Promise<Staff | undefined> {
 }
 
 export async function addStaff(staff: Omit<Staff, "id" | "createdAt" | "updatedAt">): Promise<Staff> {
+    const {
+        name,
+        email,
+        staffNumber,
+        jobRole,
+        jobId,
+        gradeId,
+        teamId,
+        lineManagerId,
+    } = staff;
+
     const res = await query(
         `INSERT INTO staff(name, email, staff_number, job_role, job_id, grade_id, team_id, line_manager_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id`,
-        [staff.name, staff.email, staff.staffNumber, staff.jobRole, staff.jobId, staff.gradeId, staff.teamId, staff.lineManagerId]
+        [name, email, staffNumber, jobRole, jobId, gradeId, teamId, lineManagerId]
     );
     return (await getStaffById(res.rows[0].id))!;
 }
 
 export async function updateStaff(id: string, data: Partial<Omit<Staff, "id" | "createdAt" | "updatedAt">>): Promise<Staff | undefined> {
-    const keys = Object.keys(data);
-    if (keys.length === 0) return getStaffById(id);
+    // List of valid columns in the 'staff' table
+    const validColumns = [
+        'name',
+        'email',
+        'staffNumber',
+        'jobRole',
+        'jobId',
+        'gradeId',
+        'teamId',
+        'lineManagerId',
+    ];
+
+    const keys = Object.keys(data).filter(key => validColumns.includes(key));
+
+    if (keys.length === 0) {
+        return getStaffById(id); // No valid fields to update
+    }
 
     const setClauses = keys.map((key, i) => `${camelToSnakeCase(key)} = $${i + 1}`);
-    const values = Object.values(data);
+    const values = keys.map(key => data[key as keyof typeof data]);
 
     const queryText = `UPDATE staff
                        SET ${setClauses.join(", ")}
                        WHERE id = $${keys.length + 1} RETURNING id`;
+
     const res = await query(queryText, [...values, id]);
 
     return (res.rowCount ?? 0) > 0 ? getStaffById(id) : undefined;
 }
+
 
 export async function deleteStaff(id: string): Promise<boolean> {
     const res = await query("DELETE FROM staff WHERE id = $1", [id]);
@@ -241,6 +269,33 @@ export async function getTaskById(id: string): Promise<Task | undefined> {
         WHERE t.id = $1
     `, [id]);
     return res.rows[0];
+}
+
+export async function getTasksByStaffId(staffId: string): Promise<Task[]> {
+    const res = await query(
+        `
+            SELECT t.id,
+                   t.title,
+                   t.description,
+                   t.status,
+                   t.priority,
+                   t.completed,
+                   t.staff_id          AS "staffId",
+                   t.due_date          AS "dueDate",
+                   t.completed_at      AS "completedAt",
+                   t.recurring_pattern AS "recurringPattern",
+                   t.next_due_date     AS "nextDueDate",
+                   t.original_task_id  AS "originalTaskId",
+                   t.created_at        AS "createdAt",
+                   t.updated_at        AS "updatedAt",
+                   s.name              AS "staffName"
+            FROM tasks t
+                     LEFT JOIN staff s ON t.staff_id = s.id
+            WHERE t.staff_id = $1
+            ORDER BY t.created_at DESC`,
+        [staffId]
+    );
+    return res.rows;
 }
 
 export async function addTask(task: Omit<Task, "id" | "createdAt" | "updatedAt" | "staffName">): Promise<Task> {

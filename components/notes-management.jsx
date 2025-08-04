@@ -1,87 +1,136 @@
 "use client"
 
-import React, {useState} from "react"
-import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
-import {Card, CardFooter} from "@/components/ui/card"
-import {addNote, deleteNote} from "@/lib/api-client"
-import {toast} from "sonner"
-import {Trash2} from "lucide-react"
-import {useRouter} from "next/navigation"
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { addNote } from "@/lib/api-client"
+import { toast } from "sonner"
+import { NoteCard } from "./note-card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 
-export function NotesManagement({staffId, initialNotes}) {
-    const router = useRouter()
-    // The state is initialized here. This is all we need.
-    const [notes] = useState(initialNotes || [])
-    const [newNote, setNewNote] = useState("")
-    const [loading, setLoading] = useState(false)
+export function NotesManagement({ notes: initialNotes, allStaff }) {
+    const router = useRouter();
+    const [notes, setNotes] = useState(initialNotes || []);
+    const [newNote, setNewNote] = useState({ title: "", content: "", staffId: "" });
+    const [loading, setLoading] = useState(false);
 
-    // The problematic useEffect has been removed.
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewNote((prev) => ({ ...prev, [name]: value }));
+    };
 
-    const handleAddNote = async () => {
-        if (!newNote.trim()) {
-            toast.error("Note content cannot be empty.")
-            return
+    const handleSelectChange = (value) => {
+        setNewNote((prev) => ({ ...prev, staffId: value }));
+    };
+
+    const handleAddNote = async (e) => {
+        e.preventDefault();
+        if (!newNote.title.trim() || !newNote.content.trim() || !newNote.staffId) {
+            toast.error("Please fill in all fields: Title, Content, and Staff.");
+            return;
         }
-        setLoading(true)
+        setLoading(true);
         try {
-            await addNote({staffId, content: newNote})
-            toast.success("Note added successfully!")
-            setNewNote("")
-            router.refresh() // Re-fetch server data
+            const addedNote = await addNote(newNote);
+            setNotes((prev) => [addedNote, ...prev]);
+            setNewNote({ title: "", content: "", staffId: "" });
+            toast.success("Note added successfully!");
+            router.refresh();
         } catch (error) {
-            toast.error("Failed to add note.")
+            toast.error(`Failed to add note: ${error.message || ''}`);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
-    const handleDeleteNote = async (noteId) => {
-        if (!confirm("Are you sure you want to delete this note?")) return
-        setLoading(true)
-        try {
-            await deleteNote(noteId)
-            toast.success("Note deleted successfully!")
-            router.refresh() // Re-fetch server data
-        } catch (error) {
-            toast.error("Failed to delete note.")
-        } finally {
-            setLoading(false)
-        }
-    }
+    const handleNoteUpdated = (updatedNote) => {
+        setNotes((prevNotes) =>
+            prevNotes.map((note) => (note.id === updatedNote.id ? updatedNote : note))
+        );
+        router.refresh();
+    };
+
+    const handleNoteDeleted = (noteId) => {
+        setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
+        router.refresh();
+    };
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-2">
-                {notes.length > 0 ? (
-                    notes.map((note) => (
-                        <Card key={note.id} className="flex justify-between items-center p-3">
-                            <p className="text-sm">{note.content}</p>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteNote(note.id)}
-                                disabled={loading}
-                            >
-                                <Trash2 className="h-4 w-4"/>
-                            </Button>
-                        </Card>
-                    ))
-                ) : (
-                    <p className="text-sm text-muted-foreground">No notes found.</p>
-                )}
+        <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Add New Note</CardTitle>
+                    <CardDescription>Create a new note and assign it to a staff member.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleAddNote} className="space-y-4">
+                        <Input
+                            name="title"
+                            placeholder="Note Title *"
+                            value={newNote.title}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                        />
+                        <Textarea
+                            name="content"
+                            placeholder="Note Content *"
+                            value={newNote.content}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                        />
+                        <Select
+                            name="staffId"
+                            value={newNote.staffId}
+                            onValueChange={handleSelectChange}
+                            disabled={loading}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Staff Member *" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {allStaff.map((staff) => (
+                                    <SelectItem key={staff.id} value={staff.id}>
+                                        {staff.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? "Adding..." : "Add Note"}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+
+            <div>
+                <h2 className="text-2xl font-bold mb-4">Existing Notes</h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {notes.length > 0 ? (
+                        notes.map((note) => (
+                            <NoteCard
+                                key={note.id}
+                                note={note}
+                                staff={allStaff}
+                                onNoteUpdated={handleNoteUpdated}
+                                onNoteDeleted={handleNoteDeleted}
+                            />
+                        ))
+                    ) : (
+                        <p className="text-muted-foreground col-span-full text-center py-8">
+                            No notes found.
+                        </p>
+                    )}
+                </div>
             </div>
-            <CardFooter className="flex gap-2 p-0">
-                <Input
-                    placeholder="Add a new note..."
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    disabled={loading}
-                />
-                <Button onClick={handleAddNote} disabled={loading}>
-                    {loading ? "Adding..." : "Add Note"}
-                </Button>
-            </CardFooter>
         </div>
-    )
+    );
 }

@@ -1,4 +1,6 @@
-// types.ts
+// lib/types.ts
+import {z} from 'zod';
+import {GradeSchema, TeamSchema, StaffSchema, TaskSchema, NoteSchema} from './schemas';
 
 export type RecurringFrequency = "daily" | "weekly" | "fortnightly" | "monthly" | "quarterly" | "yearly";
 export type TaskStatus = "Pending" | "In Progress" | "Completed" | "Blocked" | "Cancelled";
@@ -7,69 +9,43 @@ export type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
 export interface RecurringPattern {
     frequency: RecurringFrequency;
     interval: number;
-    startDate: string; // Changed to string for API safety
+    startDate: string;
     endDate?: string;
     maxOccurrences?: number;
     currentOccurrence: number;
 }
 
-export interface Grade {
+// Infer types from Zod schemas
+export type Grade = z.infer<typeof GradeSchema> & {
     id: string;
-    name: string;
-    description?: string;
-    createdAt: string; // Changed to string
-    updatedAt: string; // Changed to string
-}
+    createdAt: string;
+    updatedAt: string;
+};
 
-export interface Team {
+export type Team = z.infer<typeof TeamSchema> & {
     id: string;
-    name: string;
-    description?: string;
-    createdAt: string; // Changed to string
-    updatedAt: string; // Changed to string
-}
+    createdAt: string;
+    updatedAt: string;
+};
 
-export interface Staff {
+export type Staff = z.infer<typeof StaffSchema> & {
     id: string;
-    name: string;
-    email: string;
-    staffNumber: string;
-    jobRole: string;
-    jobId?: string;
-    gradeId?: string;
-    teamId?: string;
-    lineManagerId?: string;
-    createdAt: string; // Changed to string
-    updatedAt: string; // Changed to string
-    // Optional fields from JOINs
+    createdAt: string;
+    updatedAt: string;
     gradeName?: string;
     teamName?: string;
     lineManagerName?: string;
-}
+};
 
-export type Task = {
+export type Task = z.infer<typeof TaskSchema> & {
     id: string;
-    title: string;
-    description: string | null;
-    status: string;
-    priority: string;
-    completed: boolean;
-    staffId: string | null;
-    dueDate: string | null;
-    completedAt: string | null;
-    recurringPattern: string | null;
-    nextDueDate: string | null;
-    originalTaskId: string | null;
     createdAt: string;
     updatedAt: string;
     staffName?: string;
 };
 
-export interface Note {
+export type Note = z.infer<typeof NoteSchema> & {
     id: string;
-    staffId: string;
-    title: string;
-    content: string;
-    createdAt: string; // Changed to string
-    updatedAt: string; // Changed to string
-}
+    createdAt: string;
+    updatedAt: string;
+};

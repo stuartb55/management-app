@@ -1,16 +1,13 @@
-import {NextResponse} from "next/server";
-import {getNotes} from "@/lib/database";
+// app/api/notes/staff/[staffId]/route.js
+import {getNotesByStaffId} from "@/lib/database";
+import {error, success} from "@/lib/api-helpers";
 
 export async function GET(request, {params}) {
     try {
         const {staffId} = params;
-        const notes = await getNotes(staffId);
-        return NextResponse.json(notes, {status: 200});
-    } catch (error) {
-        console.error("Error fetching notes by staff ID:", error);
-        return NextResponse.json(
-            {message: "Internal Server Error"},
-            {status: 500},
-        );
+        const notes = await getNotesByStaffId(staffId);
+        return success(notes);
+    } catch (err) {
+        return error(`Failed to fetch notes for staff: ${err.message}`);
     }
 }

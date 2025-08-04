@@ -1,18 +1,13 @@
-import {NextResponse} from "next/server";
+// app/api/tasks/staff/[staffId]/route.js
 import {getTasksByStaffId} from "@/lib/database";
+import {error, success} from "@/lib/api-helpers";
 
 export async function GET(request, {params}) {
     try {
         const {staffId} = params;
         const tasks = await getTasksByStaffId(staffId);
-        return NextResponse.json(tasks, {status: 200});
-    } catch (error) {
-        // Check if params exists and has staffId before trying to access it
-        const staffIdForError = params ? params.staffId : "unknown";
-        console.error(`Error fetching tasks for staff ${staffIdForError}:`, error);
-        return NextResponse.json(
-            {error: "Failed to fetch tasks"},
-            {status: 500}
-        );
+        return success(tasks);
+    } catch (err) {
+        return error(`Failed to fetch tasks for staff: ${err.message}`);
     }
 }

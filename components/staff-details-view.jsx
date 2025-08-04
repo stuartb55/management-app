@@ -4,8 +4,8 @@ import React, {useState} from "react";
 import {useRouter} from "next/navigation";
 import {StaffDetails} from "@/components/staff-details";
 import {StaffEditDialog} from "@/components/staff-edit-dialog";
-import {NotesManagement} from "@/components/notes-management"; // Corrected import
-import {TaskManagement} from "@/components/task-management";   // Corrected import
+import {StaffNotes} from "@/components/staff-notes";
+import {TaskManagement} from "@/components/task-management";
 import {
     Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
@@ -50,8 +50,7 @@ export function StaffDetailsView({staffMember, allStaff, notes, tasks}) {
                             <CardTitle>Notes</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {/* Corrected component name */}
-                            <NotesManagement staffId={staffMember.id} initialNotes={notes}/>
+                            <StaffNotes staffId={staffMember.id} initialNotes={notes}/>
                         </CardContent>
                     </Card>
                     <Card>
@@ -59,7 +58,6 @@ export function StaffDetailsView({staffMember, allStaff, notes, tasks}) {
                             <CardTitle>Tasks</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {/* Corrected component name */}
                             <TaskManagement staffId={staffMember.id} initialTasks={tasks}/>
                         </CardContent>
                     </Card>

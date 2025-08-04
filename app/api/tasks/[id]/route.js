@@ -1,39 +1,17 @@
-import {NextResponse} from "next/server";
-import {updateTask, deleteTask} from "@/lib/database";
+// app/api/tasks/[id]/route.js
+import {getTaskById, updateTask, deleteTask} from "@/lib/database";
+import {handleGetById, handleUpdate, handleDelete} from "@/lib/api-helpers";
+import {TaskSchema} from "@/lib/schemas";
+
+export async function GET(request, {params}) {
+    return handleGetById(getTaskById, params.id, "task");
+}
 
 export async function PUT(request, {params}) {
-    try {
-        console.log(`Updating task with ID: ${params.id}`);
-        const updates = await request.json();
-
-        const updatedTask = await updateTask(params.id, updates);
-        if (updatedTask) {
-            console.log(`Successfully updated task: ${updatedTask.title}`);
-            return NextResponse.json(updatedTask);
-        } else {
-            console.log(`Task not found for update: ${params.id}`);
-            return NextResponse.json({error: "Task not found"}, {status: 404});
-        }
-    } catch (error) {
-        console.error(`Error in PUT /api/tasks/${params.id}:`, error);
-        return NextResponse.json({error: "Failed to update task"}, {status: 500});
-    }
+    const data = await request.json();
+    return handleUpdate(updateTask, params.id, data, TaskSchema.partial(), "task");
 }
 
 export async function DELETE(request, {params}) {
-    try {
-        console.log(`Deleting task with ID: ${params.id}`);
-        const success = await deleteTask(params.id);
-
-        if (success) {
-            console.log(`Successfully deleted task: ${params.id}`);
-            return NextResponse.json({success: true});
-        } else {
-            console.log(`Task not found for deletion: ${params.id}`);
-            return NextResponse.json({error: "Task not found"}, {status: 404});
-        }
-    } catch (error) {
-        console.error(`Error in DELETE /api/tasks/${params.id}:`, error);
-        return NextResponse.json({error: "Failed to delete task"}, {status: 500});
-    }
+    return handleDelete(deleteTask, params.id, "task");
 }

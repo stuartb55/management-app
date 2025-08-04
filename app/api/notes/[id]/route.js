@@ -1,39 +1,17 @@
-import {NextResponse} from "next/server";
-import {updateNote, deleteNote} from "@/lib/database";
+// app/api/notes/[id]/route.js
+import {getNoteById, updateNote, deleteNote} from "@/lib/database";
+import {handleGetById, handleUpdate, handleDelete} from "@/lib/api-helpers";
+import {NoteSchema} from "@/lib/schemas";
+
+export async function GET(request, {params}) {
+    return handleGetById(getNoteById, params.id, "note");
+}
 
 export async function PUT(request, {params}) {
-    try {
-        console.log(`Updating note with ID: ${params.id}`);
-        const updates = await request.json();
-
-        const updatedNote = await updateNote(params.id, updates);
-        if (updatedNote) {
-            console.log(`Successfully updated note: ${updatedNote.title}`);
-            return NextResponse.json(updatedNote);
-        } else {
-            console.log(`Note not found for update: ${params.id}`);
-            return NextResponse.json({error: "Note not found"}, {status: 404});
-        }
-    } catch (error) {
-        console.error(`Error in PUT /api/notes/${params.id}:`, error);
-        return NextResponse.json({error: "Failed to update note"}, {status: 500});
-    }
+    const data = await request.json();
+    return handleUpdate(updateNote, params.id, data, NoteSchema.partial(), "note");
 }
 
 export async function DELETE(request, {params}) {
-    try {
-        console.log(`Deleting note with ID: ${params.id}`);
-        const success = await deleteNote(params.id);
-
-        if (success) {
-            console.log(`Successfully deleted note: ${params.id}`);
-            return NextResponse.json({success: true});
-        } else {
-            console.log(`Note not found for deletion: ${params.id}`);
-            return NextResponse.json({error: "Note not found"}, {status: 404});
-        }
-    } catch (error) {
-        console.error(`Error in DELETE /api/notes/${params.id}:`, error);
-        return NextResponse.json({error: "Failed to delete note"}, {status: 500});
-    }
+    return handleDelete(deleteNote, params.id, "note");
 }

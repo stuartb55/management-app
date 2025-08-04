@@ -1,16 +1,17 @@
 // lib/database.ts
 
-import {Pool, QueryResult} from "pg";
-import {Grade, Note, Staff, Task, Team} from "./types";
+import {Pool, type QueryResult} from "pg";
+import type {Grade, Note, Staff, Task, Team} from "./types";
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
-// Generic query helper
+// Generic query helper to execute SQL queries with parameters
 async function query(text: string, params?: unknown[]): Promise<QueryResult> {
     const start = Date.now();
     try {
+        // The await is necessary here because pool.query returns a Promise.
         const res = await pool.query(text, params);
         const duration = Date.now() - start;
         console.log("executed query", {text, duration, rows: res.rowCount});
@@ -26,6 +27,9 @@ function camelToSnakeCase(str: string): string {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
+// Simple regex to validate UUID format
+const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 // --- Grade Management ---
 export async function getGrades(): Promise<Grade[]> {
     const res = await query('SELECT id, name, description, created_at AS "createdAt", updated_at AS "updatedAt" FROM grades ORDER BY name');
@@ -33,6 +37,10 @@ export async function getGrades(): Promise<Grade[]> {
 }
 
 export async function getGradeById(id: string): Promise<Grade | undefined> {
+    if (!uuidRegex.test(id)) {
+        console.warn(`Invalid UUID format for getGradeById: ${id}`);
+        return undefined;
+    }
     const res = await query('SELECT id, name, description, created_at AS "createdAt", updated_at AS "updatedAt" FROM grades WHERE id = $1', [id]);
     return res.rows[0];
 }
@@ -72,6 +80,10 @@ export async function getTeams(): Promise<Team[]> {
 }
 
 export async function getTeamById(id: string): Promise<Team | undefined> {
+    if (!uuidRegex.test(id)) {
+        console.warn(`Invalid UUID format for getTeamById: ${id}`);
+        return undefined;
+    }
     const res = await query('SELECT id, name, description, created_at AS "createdAt", updated_at AS "updatedAt" FROM teams WHERE id = $1', [id]);
     return res.rows[0];
 }
@@ -131,6 +143,10 @@ export async function getStaff(): Promise<Staff[]> {
 }
 
 export async function getStaffById(id: string): Promise<Staff | undefined> {
+    if (!uuidRegex.test(id)) {
+        console.warn(`Invalid UUID format for getStaffById: ${id}`);
+        return undefined;
+    }
     const res = await query(`
         SELECT s.id,
                s.name,
@@ -173,11 +189,12 @@ export async function addStaff(staff: Omit<Staff, "id" | "createdAt" | "updatedA
          RETURNING id`,
         [name, email, staffNumber, jobRole, jobId, gradeId, teamId, lineManagerId]
     );
-    return (await getStaffById(res.rows[0].id))!;
+    const newStaff = await getStaffById(res.rows[0].id);
+    if (!newStaff) throw new Error("Failed to retrieve new staff member after creation.");
+    return newStaff;
 }
 
 export async function updateStaff(id: string, data: Partial<Omit<Staff, "id" | "createdAt" | "updatedAt">>): Promise<Staff | undefined> {
-    // List of valid columns in the 'staff' table
     const validColumns = [
         'name',
         'email',
@@ -192,7 +209,7 @@ export async function updateStaff(id: string, data: Partial<Omit<Staff, "id" | "
     const keys = Object.keys(data).filter(key => validColumns.includes(key));
 
     if (keys.length === 0) {
-        return getStaffById(id); // No valid fields to update
+        return getStaffById(id);
     }
 
     const setClauses = keys.map((key, i) => `${camelToSnakeCase(key)} = $${i + 1}`);
@@ -221,7 +238,6 @@ export async function getTasks(staffId?: string): Promise<Task[]> {
                t.description,
                t.status,
                t.priority,
-               t.completed,
                t.staff_id          AS "staffId",
                t.due_date          AS "dueDate",
                t.completed_at      AS "completedAt",
@@ -248,13 +264,16 @@ export async function getTasks(staffId?: string): Promise<Task[]> {
 }
 
 export async function getTaskById(id: string): Promise<Task | undefined> {
+    if (!uuidRegex.test(id)) {
+        console.warn(`Invalid UUID format for getTaskById: ${id}`);
+        return undefined;
+    }
     const res = await query(`
         SELECT t.id,
                t.title,
                t.description,
                t.status,
                t.priority,
-               t.completed,
                t.staff_id          AS "staffId",
                t.due_date          AS "dueDate",
                t.completed_at      AS "completedAt",
@@ -272,41 +291,20 @@ export async function getTaskById(id: string): Promise<Task | undefined> {
 }
 
 export async function getTasksByStaffId(staffId: string): Promise<Task[]> {
-    const res = await query(
-        `
-            SELECT t.id,
-                   t.title,
-                   t.description,
-                   t.status,
-                   t.priority,
-                   t.completed,
-                   t.staff_id          AS "staffId",
-                   t.due_date          AS "dueDate",
-                   t.completed_at      AS "completedAt",
-                   t.recurring_pattern AS "recurringPattern",
-                   t.next_due_date     AS "nextDueDate",
-                   t.original_task_id  AS "originalTaskId",
-                   t.created_at        AS "createdAt",
-                   t.updated_at        AS "updatedAt",
-                   s.name              AS "staffName"
-            FROM tasks t
-                     LEFT JOIN staff s ON t.staff_id = s.id
-            WHERE t.staff_id = $1
-            ORDER BY t.created_at DESC`,
-        [staffId]
-    );
-    return res.rows;
+    return getTasks(staffId);
 }
 
 export async function addTask(task: Omit<Task, "id" | "createdAt" | "updatedAt" | "staffName">): Promise<Task> {
     const res = await query(
-        `INSERT INTO tasks(title, description, status, priority, due_date, completed, completed_at, recurring_pattern,
+        `INSERT INTO tasks(title, description, status, priority, due_date, completed_at, recurring_pattern,
                            next_due_date, original_task_id, staff_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id`,
-        [task.title, task.description, task.status, task.priority, task.dueDate, task.completed, task.completedAt, task.recurringPattern, task.nextDueDate, task.originalTaskId, task.staffId]
+        [task.title, task.description, task.status, task.priority, task.dueDate, task.completedAt, task.recurringPattern, task.nextDueDate, task.originalTaskId, task.staffId]
     );
-    return (await getTaskById(res.rows[0].id))!;
+    const newTask = await getTaskById(res.rows[0].id);
+    if (!newTask) throw new Error("Failed to retrieve new task after creation.");
+    return newTask;
 }
 
 export async function updateTask(id: string, data: Partial<Omit<Task, "id" | "createdAt" | "updatedAt" | "staffName">>): Promise<Task | undefined> {
@@ -357,7 +355,15 @@ export async function getNotes(staffId?: string): Promise<Note[]> {
     return res.rows;
 }
 
+export async function getNotesByStaffId(staffId: string): Promise<Note[]> {
+    return getNotes(staffId);
+}
+
 export async function getNoteById(id: string): Promise<Note | undefined> {
+    if (!uuidRegex.test(id)) {
+        console.warn(`Invalid UUID format for getNoteById: ${id}`);
+        return undefined;
+    }
     const res = await query(`
         SELECT id, title, content, staff_id AS "staffId", created_at AS "createdAt", updated_at AS "updatedAt"
         FROM notes

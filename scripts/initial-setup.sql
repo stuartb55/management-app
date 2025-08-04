@@ -64,7 +64,9 @@ CREATE TABLE staff
     team_id         UUID                REFERENCES teams (id) ON DELETE SET NULL,
     line_manager_id UUID                REFERENCES staff (id) ON DELETE SET NULL,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_email CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$'),
+    CONSTRAINT chk_line_manager CHECK (id <> line_manager_id)
 );
 CREATE TRIGGER set_timestamp
     BEFORE UPDATE
@@ -81,7 +83,6 @@ CREATE TABLE tasks
     status            task_status   NOT NULL   DEFAULT 'Pending',
     priority          task_priority NOT NULL   DEFAULT 'Medium',
     due_date          TIMESTAMP WITH TIME ZONE,
-    completed         BOOLEAN                  DEFAULT FALSE,
     completed_at      TIMESTAMP WITH TIME ZONE,
     recurring_pattern JSONB,
     next_due_date     TIMESTAMP WITH TIME ZONE,
@@ -96,7 +97,7 @@ CREATE TRIGGER set_timestamp
     FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
--- Create notes table (linked to STAFF as per your types.ts)
+-- Create notes table
 CREATE TABLE notes
 (
     id         UUID PRIMARY KEY         DEFAULT gen_random_uuid(),

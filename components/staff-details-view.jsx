@@ -58,7 +58,11 @@ export function StaffDetailsView({staffMember, allStaff, notes, tasks}) {
                             <CardTitle>Tasks</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <TaskManagement staffId={staffMember.id} initialTasks={tasks}/>
+                            <TaskManagement
+                                staffId={staffMember.id}
+                                initialTasks={tasks}
+                                allStaff={allStaff}
+                            />
                         </CardContent>
                     </Card>
                 </div>

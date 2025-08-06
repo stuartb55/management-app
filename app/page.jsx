@@ -89,7 +89,7 @@ export default async function HomePage() {
 
 
     const upcomingDeadlines = tasks
-        .filter(task => task.status !== 'Completed' && task.dueDate)
+        .filter(task => task.status !== 'Completed' && task.status !== 'Cancelled' && task.dueDate)
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
         .slice(0, 5)
 

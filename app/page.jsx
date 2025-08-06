@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Users, CheckSquare, FileText, Plus} from "lucide-react"
+import {Users, CheckSquare, Plus, Calendar, AlertTriangle} from "lucide-react"
 import Link from "next/link"
 import {formatDateTime} from "@/lib/utils"
 import {
@@ -19,6 +19,10 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import {TaskKanbanBoard} from "@/components/task-kanban-board"
+import {StaffQuickSearch} from "@/components/staff-quick-search"
+import {DashboardMetrics} from "@/components/dashboard-metrics"
+import {RecentActivity} from "@/components/recent-activity"
 
 export default async function HomePage() {
     let staff = []
@@ -59,7 +63,10 @@ export default async function HomePage() {
             <div className="container mx-auto p-6">
                 <Card className="w-full max-w-md mx-auto">
                     <CardHeader>
-                        <CardTitle>Database Connection Error</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive"/>
+                            Database Connection Error
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-destructive mb-4">{error}</p>
@@ -73,47 +80,21 @@ export default async function HomePage() {
         )
     }
 
-    const completedTasks = tasks.filter(task => task.completed).length
-    const pendingTasks = tasks.filter(task => !task.completed).length
+    const completedTasks = tasks.filter(task => task.status === 'Completed').length
+    const pendingTasks = tasks.filter(task => task.status === 'Pending').length
+    const inProgressTasks = tasks.filter(task => task.status === 'In Progress').length
     const overdueTasks = tasks.filter(
-        task => !task.completed && task.dueDate && new Date(task.dueDate) < new Date(),
+        task => task.status !== 'Completed' && task.dueDate && new Date(task.dueDate) < new Date(),
     ).length
 
-    const recentTasks = tasks
-        .filter(task => !task.completed)
-        .sort((a, b) => {
-            if (!a.dueDate && !b.dueDate) return 0
-            if (!a.dueDate) return 1
-            if (!b.dueDate) return -1
-            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-        })
+
+    const upcomingDeadlines = tasks
+        .filter(task => task.status !== 'Completed' && task.dueDate)
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
         .slice(0, 5)
 
-    const recentNotes = notes.slice(0, 5)
-
-    const getStaffName = staffId => {
-        if (!staffId) return "Unassigned"
-        const staffMember = staff.find(s => s.id === staffId)
-        return staffMember ? staffMember.name : "Unknown Staff"
-    }
-
-    const getPriorityColour = priority => {
-        switch (priority) {
-            case "Urgent":
-                return "destructive"
-            case "High":
-                return "secondary"
-            case "Medium":
-                return "outline"
-            case "Low":
-                return "outline"
-            default:
-                return "outline"
-        }
-    }
-
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-6 space-y-8">
             <Breadcrumb>
                 <BreadcrumbList>
                     <BreadcrumbItem>
@@ -125,276 +106,206 @@ export default async function HomePage() {
                     </BreadcrumbItem>
                 </BreadcrumbList>
             </Breadcrumb>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-                    <p className="text-muted-foreground mt-1">
-                        An overview of your team's activities.
+                    <h1 className="text-4xl font-bold text-foreground mb-2">Team Dashboard</h1>
+                    <p className="text-muted-foreground text-lg">
+                        Manage your team, track progress, and stay organized.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button asChild>
-                        <Link href="/staff">
-                            <Plus className="mr-2 h-4 w-4"/>
-                            Add Staff
-                        </Link>
-                    </Button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <StaffQuickSearch staff={staff}/>
+                    <div className="flex gap-2">
+                        <Button asChild>
+                            <Link href="/tasks">
+                                <Plus className="mr-2 h-4 w-4"/>
+                                New Task
+                            </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href="/staff/new">
+                                <Plus className="mr-2 h-4 w-4"/>
+                                Add Staff
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="hover:shadow-md transition-shadow">
-                    <Link href="/staff" className="block h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Manage Staff</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground"/>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground">
-                                Add, edit, and manage team members.
-                            </p>
-                        </CardContent>
-                    </Link>
-                </Card>
+            {/* Metrics Dashboard */}
+            <DashboardMetrics
+                totalStaff={staff.length}
+                pendingTasks={pendingTasks}
+                inProgressTasks={inProgressTasks}
+                completedTasks={completedTasks}
+                overdueTasks={overdueTasks}
+                totalNotes={notes.length}
+            />
 
-                <Card className="hover:shadow-md transition-shadow">
-                    <Link href="/tasks" className="block h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Manage Tasks
-                            </CardTitle>
-                            <CheckSquare className="h-4 w-4 text-muted-foreground"/>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground">
-                                Create and track tasks for your team.
-                            </p>
-                        </CardContent>
-                    </Link>
-                </Card>
-
-                <Card className="hover:shadow-md transition-shadow">
-                    <Link href="/notes" className="block h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Manage Notes
-                            </CardTitle>
-                            <FileText className="h-4 w-4 text-muted-foreground"/>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-muted-foreground">
-                                Document important information and updates.
-                            </p>
-                        </CardContent>
-                    </Link>
-                </Card>
-            </div>
-
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground"/>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{staff.length}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Active team members
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                        <CheckSquare className="h-4 w-4 text-muted-foreground"/>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pendingTasks}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {overdueTasks > 0 && (
-                                <span className="text-destructive">{overdueTasks} overdue</span>
-                            )}
-                            {overdueTasks === 0 && "All on track"}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Completed Tasks
+            {/* Quick Actions and Urgent Items */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Upcoming Deadlines - More prominent */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Calendar className="h-5 w-5"/>
+                            Urgent & Upcoming Tasks
                         </CardTitle>
-                        <CheckSquare className="h-4 w-4 text-muted-foreground"/>
+                        <CardDescription>Tasks that need immediate attention</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{completedTasks}</div>
-                        <p className="text-xs text-muted-foreground">Tasks finished</p>
-                    </CardContent>
-                </Card>
+                        {upcomingDeadlines.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {upcomingDeadlines.map((task) => {
+                                    const isOverdue = new Date(task.dueDate) < new Date()
+                                    const staffMember = staff.find(s => s.id === task.staffId)
+                                    const daysUntilDue = Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24))
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Notes</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground"/>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{notes.length}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Documentation entries
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Staff List */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>Team Members</CardTitle>
-                            <CardDescription>Your current staff members</CardDescription>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href="/staff">View All</Link>
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {staff.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-muted-foreground mb-4">
-                                        No staff members found
-                                    </p>
-                                    <Button asChild>
-                                        <Link href="/staff">
-                                            <Plus className="mr-2 h-4 w-4"/>
-                                            Add First Staff Member
-                                        </Link>
-                                    </Button>
-                                </div>
-                            ) : (
-                                staff
-                                    .slice(0, 6)
-                                    .map(member => (
-                                        <div
-                                            key={member.id}
-                                            className="flex items-center justify-between"
-                                        >
-                                            <div>
-                                                <p className="font-medium">{member.name}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {member.jobRole} • {member.teamName || "No team"}
-                                                </p>
+                                    return (
+                                        <Card key={task.id} className={`p-4 ${isOverdue ? 'border-destructive bg-destructive/5' : daysUntilDue <= 3 ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' : ''}`}>
+                                            <div className="space-y-2">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <Link href={`/tasks/${task.id}`} className="font-medium hover:underline truncate">
+                                                        {task.title}
+                                                    </Link>
+                                                    <Badge variant={isOverdue ? "destructive" : daysUntilDue <= 3 ? "outline" : "secondary"}
+                                                           className="text-xs shrink-0">
+                                                        {isOverdue ? "Overdue" : `${daysUntilDue}d left`}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground">
+                                                        {staffMember?.name || "Unassigned"}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Due: {formatDateTime(task.dueDate).split(' ')[0]}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/staff/${member.id}`}>View</Link>
-                                            </Button>
-                                        </div>
-                                    ))
-                            )}
+                                        </Card>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4"/>
+                                <p className="text-muted-foreground">No urgent tasks - great work!</p>
+                            </div>
+                        )}
+                        <div className="mt-4 pt-4 border-t">
+                            <Button variant="outline" size="sm" asChild className="w-full">
+                                <Link href="/tasks">View All Tasks</Link>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Recent Tasks */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>Upcoming Tasks</CardTitle>
-                            <CardDescription>Tasks that need attention</CardDescription>
-                        </div>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href="/tasks">View All</Link>
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recentTasks.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-muted-foreground mb-4">
-                                        No pending tasks
-                                    </p>
-                                    <Button asChild>
-                                        <Link href="/tasks">
-                                            <Plus className="mr-2 h-4 w-4"/>
-                                            Create First Task
-                                        </Link>
-                                    </Button>
-                                </div>
-                            ) : (
-                                recentTasks.map(task => (
-                                    <div
-                                        key={task.id}
-                                        className="flex items-start justify-between"
-                                    >
-                                        <div className="flex-1">
-                                            <p className="font-medium">{task.title}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Assigned to: {getStaffName(task.staffId)}
-                                            </p>
-                                            {task.dueDate && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Due: {formatDateTime(task.dueDate)}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            <Badge variant={getPriorityColour(task.priority)}>
-                                                {task.priority}
-                                            </Badge>
-                                            {task.dueDate && new Date(task.dueDate) < new Date() && (
-                                                <Badge variant="destructive">Overdue</Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Recent Activity */}
+                <RecentActivity tasks={tasks} notes={notes} staff={staff}/>
             </div>
 
-            {/* Recent Notes */}
+            {/* Main Task Board */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Recent Notes</CardTitle>
-                        <CardDescription>Latest documentation and updates</CardDescription>
+                        <CardTitle className="text-2xl">Task Board</CardTitle>
+                        <CardDescription>Drag and drop tasks to update their status</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href="/notes">View All</Link>
+                    <Button asChild>
+                        <Link href="/tasks">
+                            <Plus className="mr-2 h-4 w-4"/>
+                            Add Task
+                        </Link>
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {recentNotes.length === 0 ? (
-                            <div className="col-span-full text-center py-8">
-                                <p className="text-muted-foreground mb-4">No notes available</p>
-                                <Button asChild>
-                                    <Link href="/notes">
-                                        <Plus className="mr-2 h-4 w-4"/>
-                                        Create First Note
-                                    </Link>
-                                </Button>
-                            </div>
-                        ) : (
-                            recentNotes.map(note => (
-                                <div key={note.id} className="border rounded-lg p-4">
-                                    <h4 className="font-medium mb-2">{note.title}</h4>
-                                    <p className="text-sm text-muted-foreground mb-2 line-clamp-3">
-                                        {note.content}
-                                    </p>
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>{getStaffName(note.staffId)}</span>
-                                        <span>{formatDateTime(note.createdAt)}</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                    <TaskKanbanBoard tasks={tasks} staff={staff}/>
+                </CardContent>
+            </Card>
+
+            {/* Team Overview Section */}
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-xl">Team Overview</CardTitle>
+                        <CardDescription>Your team at a glance</CardDescription>
                     </div>
+                    <Button variant="outline" asChild>
+                        <Link href="/staff">View All Staff</Link>
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    {staff.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {staff.slice(0, 8).map((member) => {
+                                const memberTasks = tasks.filter(task => task.staffId === member.id)
+                                const memberNotes = notes.filter(note => note.staffId === member.id)
+                                const activeTasks = memberTasks.filter(task => task.status !== 'Completed').length
+                                const overdueTasks = memberTasks.filter(task => 
+                                    task.status !== 'Completed' && task.dueDate && new Date(task.dueDate) < new Date()
+                                ).length
+
+                                return (
+                                    <Card key={member.id} className={`hover:shadow-md transition-shadow ${overdueTasks > 0 ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : ''}`}>
+                                        <CardContent className="p-4">
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <Link
+                                                        href={`/staff/${member.id}`}
+                                                        className="font-semibold hover:underline truncate block"
+                                                    >
+                                                        {member.name}
+                                                    </Link>
+                                                    <p className="text-sm text-muted-foreground truncate">
+                                                        {member.jobRole}
+                                                    </p>
+                                                    {member.teamName && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {member.teamName}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 text-xs">
+                                                    {activeTasks > 0 && (
+                                                        <Badge variant={overdueTasks > 0 ? "destructive" : "outline"}>
+                                                            {activeTasks} active
+                                                            {overdueTasks > 0 && ` (${overdueTasks} overdue)`}
+                                                        </Badge>
+                                                    )}
+                                                    {memberNotes.length > 0 && (
+                                                        <Badge variant="secondary">
+                                                            {memberNotes.length} notes
+                                                        </Badge>
+                                                    )}
+                                                    {activeTasks === 0 && (
+                                                        <Badge variant="outline" className="text-green-600">
+                                                            No active tasks
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4"/>
+                            <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Add your first team member to get started
+                            </p>
+                            <Button asChild>
+                                <Link href="/staff/new">
+                                    <Plus className="mr-2 h-4 w-4"/>
+                                    Add First Staff Member
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

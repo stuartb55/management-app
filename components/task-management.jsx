@@ -7,7 +7,7 @@ import {Input} from "./ui/input";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "./ui/select";
 import {Textarea} from "./ui/textarea";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/card";
-import {DatePicker} from "./date-picker";
+import {DatePicker} from "@/components/ui/date-picker"
 
 export function TaskManagement({tasks: initialTasks, allStaff = [], staffId}) {
     const router = useRouter();
@@ -47,18 +47,17 @@ export function TaskManagement({tasks: initialTasks, allStaff = [], staffId}) {
         };
 
         try {
-            const response = await fetch("/api/tasks", {
+            const addedTask = await fetch("/api/tasks", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(taskData),
+            }).then(async response => {
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to add task");
+                }
+                return response.json();
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to add task");
-            }
-
-            const addedTask = await response.json();
             setTasks((prev) => [...prev, addedTask]);
             setNewTask({
                 title: "",

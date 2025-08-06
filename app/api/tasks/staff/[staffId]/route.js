@@ -4,7 +4,8 @@ import {error, success} from "@/lib/api-helpers";
 
 export async function GET(request, {params}) {
     try {
-        const {staffId} = params;
+        const resolvedParams = await params;
+        const {staffId} = resolvedParams;
         const tasks = await getTasksByStaffId(staffId);
         return success(tasks);
     } catch (err) {

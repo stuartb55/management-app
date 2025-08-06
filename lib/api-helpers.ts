@@ -33,9 +33,11 @@ export async function handleCreate<T>(
     type: string
 ) {
     try {
+        console.log(`Creating new ${type} with data:`, data);
         const validation = schema.safeParse(data);
         if (!validation.success) {
-            return error(`Invalid ${type} data`, 400);
+            console.error(`Validation failed for ${type}:`, validation.error.issues);
+            return error(`Invalid ${type} data: ${validation.error.issues.map(e => e.message).join(', ')}`, 400);
         }
         console.log(`Creating new ${type}...`);
         const newItem = await creator(validation.data);
@@ -70,11 +72,23 @@ export async function handleUpdate<T>(
     type: string
 ) {
     try {
+        console.log(`Updating ${type} with ID: ${id}`);
+        console.log(`Update data received:`, data);
+
         const validation = schema.safeParse(data);
         if (!validation.success) {
-            return error(`Invalid ${type} data for update`, 400);
+            console.error(`Validation failed for ${type} update:`, validation.error);
+            console.error(`Validation data was:`, data);
+
+            // Safe error message handling
+            const errorMessages = validation.error.issues?.map(issue =>
+                `${issue.path.join('.')}: ${issue.message}`
+            ).join(', ') || 'Validation failed';
+
+            return error(`Invalid ${type} data for update: ${errorMessages}`, 400);
         }
-        console.log(`Updating ${type} with ID: ${id}`);
+
+        console.log(`Validated data for ${type}:`, validation.data);
         const updatedItem = await updater(id, validation.data);
         if (!updatedItem) {
             return error(`${type} not found for update`, 404);
@@ -82,6 +96,7 @@ export async function handleUpdate<T>(
         console.log(`Successfully updated ${type}: ${updatedItem.name || updatedItem.title}`);
         return success(updatedItem);
     } catch (err) {
+        console.error(`Error updating ${type}:`, err);
         return error(`Failed to update ${type}: ${(err as Error).message}`);
     }
 }

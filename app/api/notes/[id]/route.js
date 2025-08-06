@@ -4,14 +4,17 @@ import {handleGetById, handleUpdate, handleDelete} from "@/lib/api-helpers";
 import {NoteSchema} from "@/lib/schemas";
 
 export async function GET(request, {params}) {
-    return handleGetById(getNoteById, params.id, "note");
+    const resolvedParams = await params;
+    return handleGetById(getNoteById, resolvedParams.id, "note");
 }
 
 export async function PUT(request, {params}) {
+    const resolvedParams = await params;
     const data = await request.json();
-    return handleUpdate(updateNote, params.id, data, NoteSchema.partial(), "note");
+    return handleUpdate(updateNote, resolvedParams.id, data, NoteSchema.partial(), "note");
 }
 
 export async function DELETE(request, {params}) {
-    return handleDelete(deleteNote, params.id, "note");
+    const resolvedParams = await params;
+    return handleDelete(deleteNote, resolvedParams.id, "note");
 }

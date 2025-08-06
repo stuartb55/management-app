@@ -4,14 +4,17 @@ import {handleGetById, handleUpdate, handleDelete} from "@/lib/api-helpers";
 import {TeamSchema} from "@/lib/schemas";
 
 export async function GET(request, {params}) {
-    return handleGetById(getTeamById, params.id, "team");
+    const resolvedParams = await params;
+    return handleGetById(getTeamById, resolvedParams.id, "team");
 }
 
 export async function PUT(request, {params}) {
+    const resolvedParams = await params;
     const data = await request.json();
-    return handleUpdate(updateTeam, params.id, data, TeamSchema.partial(), "team");
+    return handleUpdate(updateTeam, resolvedParams.id, data, TeamSchema.partial(), "team");
 }
 
 export async function DELETE(request, {params}) {
-    return handleDelete(deleteTeam, params.id, "team");
+    const resolvedParams = await params;
+    return handleDelete(deleteTeam, resolvedParams.id, "team");
 }
